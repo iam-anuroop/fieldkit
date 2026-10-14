@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FieldKit – Field Engineering Workspace</title>
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--ink:#14202e;--mut:#5b6b7e;--line:#dde3ea;--pri:#0b5cad;--pri2:#e8f1fb;--ok:#14804a;--warn:#b26a00;--bad:#c0262d;--r:12px}
+@media(prefers-color-scheme:dark){:root{--bg:#0e141b;--card:#18212b;--ink:#e8eef5;--mut:#9aa9ba;--line:#2a3846;--pri:#4d9bea;--pri2:#16283b;--ok:#4cc28a;--warn:#f0b04a;--bad:#ff7b80}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:var(--pri)}:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.top{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;text-decoration:none;color:var(--ink);font-size:18px}.brand b{color:var(--pri)}
+#crumbs{flex:1;color:var(--mut);font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--pri2);color:var(--pri);white-space:nowrap}.pill.saving{color:var(--warn)}.pill.err{color:var(--bad)}
+main{max-width:1200px;margin:0 auto;padding:16px}.foot{text-align:center;color:var(--mut);font-size:12px;padding:20px}
+h1{font-size:24px;margin:8px 0}h2{font-size:18px;margin:24px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.sp{flex:1}
+button,.btn,select,input,textarea{font:inherit;color:var(--ink)}
+button,.btn{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button:hover{background:var(--pri2)}.pri{background:var(--pri);color:#fff;border-color:var(--pri)}.pri:hover{background:var(--pri);filter:brightness(1.1)}.dng{color:var(--bad)}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+textarea{min-height:140px}label{display:block;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:4px}
+.form{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.err{color:var(--bad);font-size:13px}
+.badge{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--pri2);color:var(--pri)}.badge.demo{background:#fff3d6;color:#8a5a00}.badge.soon{background:var(--line);color:var(--mut)}
+.bar{height:8px;background:var(--line);border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+.stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}.stat{padding:12px;border-radius:10px;background:var(--pri2)}.stat b{font-size:24px;display:block}.stat span{font-size:12px;color:var(--mut)}
+.tabs{display:flex;gap:6px;overflow-x:auto;position:sticky;top:57px;background:var(--bg);padding:8px 0;z-index:4}.tabs button{white-space:nowrap}.tabs .on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.empty{text-align:center;padding:32px 16px;color:var(--mut)}.empty p{margin:0 0 12px}
+table{width:100%;border-collapse:collapse;background:var(--card)}th{font-size:12px;text-align:left;color:var(--mut);padding:8px}td{padding:6px 8px;border-top:1px solid var(--line)}tfoot td{font-weight:700;background:var(--pri2)}
+td input,td select{min-height:40px}td.n input{text-align:center;min-width:64px}.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+.issues li{color:var(--warn);margin:4px 0}
+#toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:grid;gap:8px;z-index:20;width:min(92vw,420px)}
+.toast{background:#1d2a38;color:#fff;padding:12px 14px;border-radius:10px;display:flex;gap:10px;align-items:center}.toast.err{background:var(--bad)}.toast button{min-height:36px;background:transparent;color:#9cc9ff;border-color:#9cc9ff}
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);max-width:460px;width:92vw}dialog::backdrop{background:#0008}
+#report{display:none}
+@media(max-width:720px){main{padding:12px}
+ .tw{border:0}table,tbody,tr,td,tfoot{display:block}thead{display:none}
+ tr[data-i]{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;padding:6px 10px}
+ td{border:0;display:flex;align-items:center;justify-content:space-between;gap:10px}td::before{content:attr(data-label);font-size:12px;font-weight:600;color:var(--mut);flex:0 0 38%}
+ td input,td select{flex:1;min-width:0}td.n input{text-align:right}tfoot tr{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--pri2);border-radius:var(--r)}tfoot td{padding:0;background:none}tfoot td::before{flex:none}}
+@media print{body>*:not(#report){display:none!important}#report{display:block;color:#000;font:12px/1.4 sans-serif}#report table{display:table}#report tr,#report td{display:revert}#report td,#report th{border:1px solid #999;padding:3px 6px}#report h2{page-break-after:avoid}}
+</style>
+</head><body>
+<header class="top">
+  <a href="#/" class="brand" aria-label="FieldKit home"><b>▣</b> FieldKit</a>
+  <nav id="crumbs" aria-label="Breadcrumb"></nav>
+  <span id="saveState" class="pill" role="status" aria-live="polite">Ready</span>
+</header>
+<main id="view" tabindex="-1"></main>
+<footer class="foot">Data is stored locally in this browser/device only. Use <b>Export JSON</b> regularly for backups.</footer>
+<div id="toasts" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+<div id="report"></div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" onerror="void 0"></script>
+<script>
+/* Core: namespace, helpers, module registry, toasts, dialogs */
+const App={mods:[],projects:[],
+ register(m){if(this.mods.some(x=>x.id===m.id))return console.warn('duplicate module',m.id);this.mods.push(Object.assign({status:'ready',category:'General',icon:'▣'},m))},
+ mod(id){return this.mods.find(m=>m.id===id)}};
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const num=v=>{v=parseFloat(v);return isFinite(v)&&v>0?v:0};
+const fmtDate=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+function toast(msg,o={}){const t=document.createElement('div');t.className='toast'+(o.err?' err':'');t.setAttribute('role',o.err?'alert':'status');t.innerHTML=`<span class="sp">${esc(msg)}</span>`;
+ if(o.label){const b=document.createElement('button');b.textContent=o.label;b.onclick=()=>{o.fn();t.remove()};t.appendChild(b)}
+ $('#toasts').appendChild(t);setTimeout(()=>t.remove(),o.label?7000:o.err?6000:3000)}
+function modal(html,btns){return new Promise(res=>{const d=$('#dlg');d.innerHTML=`<form method="dialog">${html}<div class="row" style="margin-top:16px;justify-content:flex-end">${btns.map(b=>`<button value="${esc(b.v)}" class="${b.c||''}">${esc(b.t)}</button>`).join('')}</div></form>`;
+ d.onclose=()=>res(d.returnValue);d.showModal()})}
+const confirmBox=(msg,ok='Delete')=>modal(`<p>${esc(msg)}</p>`,[{t:'Cancel',v:'no'},{t:ok,v:'yes',c:'pri'}]).then(v=>v==='yes');
+</script>
+<script>
+/* Storage: browser localStorage with debounced autosave. */
+const Store={db:false,timers:{},K:'fieldkit.projects',
+ async open(){try{localStorage.setItem('fk_t','1');localStorage.removeItem('fk_t');this.db=true}catch(e){toast('Browser storage unavailable - work will NOT be kept. Export JSON often.',{err:1})}},
+ read(){const raw=localStorage.getItem(this.K);if(!raw)return[];try{const a=JSON.parse(raw);return Array.isArray(a)?a:[]}catch(e){localStorage.setItem(this.K+'.corrupt',raw);toast('Saved data was unreadable; a copy was kept.',{err:1});return[]}},
+ write(a){localStorage.setItem(this.K,JSON.stringify(a))},
+ async load(){try{return this.read()}catch(e){return[]}},
+ async put(p){const a=this.read(),i=a.findIndex(x=>x.id===p.id);if(i<0)a.push(p);else a[i]=p;this.write(a)},
+ async del(id){this.write(this.read().filter(x=>x.id!==id))},
+ state(s,t){const e=$('#saveState');e.textContent=t;e.className='pill '+s},
+ save(p){p.updated=Date.now();this.state('saving','Saving...');clearTimeout(this.timers[p.id]);
+  this.timers[p.id]=setTimeout(async()=>{try{await this.put(p);this.state('','Saved locally')}catch(e){this.state('err','Not saved!');toast('Save failed: '+e.message,{err:1})}},400)}};
+function newProject(over={}){return Object.assign({id:uid(),name:'',client:'',site:'',location:'',date:new Date().toISOString().slice(0,10),surveyor:'',ref:'',status:'Not Started',notes:'',demo:false,created:Date.now(),updated:Date.now(),data:{}},over)}
+function validateProject(o){if(!o||typeof o!=='object'||typeof o.name!=='string'||!o.data||typeof o.data!=='object')throw new Error('Not a valid FieldKit project file');return newProject(Object.assign({},o,{id:uid(),demo:false,updated:Date.now()}))}
+</script>
+<script>
+/* Export: Excel (one sheet per area), JSON backup, printable report. Modules supply sheets(p) -> [{name,rows}] */
+const ready=()=>App.mods.filter(m=>m.status==='ready');
+function projectSummary(p){return ready().filter(m=>m.summary).flatMap(m=>m.summary(p))}
+function projectIssues(p){const o=[];if(!p.name.trim())o.push('Project name is missing');ready().filter(m=>m.issues).forEach(m=>m.issues(p).forEach(i=>o.push(m.name+': '+i)));return o}
+function projectSheets(p){
+ const info=[['Field','Value'],['Project',p.name],['Client',p.client],['Site',p.site],['Location',p.location],['Survey Date',p.date],['Engineer / Surveyor',p.surveyor],['Reference',p.ref],['Status',p.status],['Notes',p.notes]];
+ const out=[{name:'Project Information',rows:info},{name:'Summary',rows:[['Metric','Value'],...projectSummary(p)]}];
+ ready().filter(m=>m.sheets).forEach(m=>out.push(...m.sheets(p)));return out}
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+const fname=p=>(p.name||'project').replace(/[^\w\-]+/g,'_').slice(0,50);
+function exportExcel(p){try{if(!window.XLSX)return exportXLS(p);
+ const wb=XLSX.utils.book_new();projectSheets(p).forEach(s=>{const ws=XLSX.utils.aoa_to_sheet(s.rows);
+  ws['!cols']=s.rows[0].map((_,c)=>({wch:Math.min(60,Math.max(10,...s.rows.map(r=>String(r[c]??'').length)))}));XLSX.utils.book_append_sheet(wb,ws,s.name.slice(0,31))});
+ XLSX.writeFile(wb,fname(p)+'.xlsx');toast('Excel exported')}catch(e){toast('Excel export failed: '+e.message,{err:1})}}
+function exportJSON(p){try{download(new Blob([JSON.stringify(p,null,1)],{type:'application/json'}),fname(p)+'.fieldkit.json');toast('Backup downloaded')}catch(e){toast('Export failed: '+e.message,{err:1})}}
+function printReport(p){const t=r=>`<table><thead><tr>${r[0].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${r.slice(1).map(x=>`<tr>${x.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+ $('#report').innerHTML=`<h1>Site Survey Report – ${esc(p.name)}</h1>`+projectSheets(p).map(s=>`<h2>${esc(s.name)}</h2>${t(s.rows)}`).join('')+
+ `<h2>Review / Sign-off</h2><table><tr><td>Prepared by: ${esc(p.surveyor)}<br><br>Signature / Date:</td><td>Reviewed by:<br><br>Signature / Date:</td></tr></table>`;
+ window.print()}
+
+function exportXLS(p){const c=v=>typeof v==='number'?`<Cell><Data ss:Type="Number">${v}</Data></Cell>`:`<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`;
+ const ws=projectSheets(p).map(s=>`<Worksheet ss:Name="${esc(s.name.slice(0,31))}"><Table>${s.rows.map(r=>`<Row>${r.map(c).join('')}</Row>`).join('')}</Table></Worksheet>`).join('');
+ download(new Blob([`<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${ws}</Workbook>`],{type:'application/vnd.ms-excel'}),fname(p)+'.xls');toast('Exported .xls (offline mode)')}
+</script>
+<script>
+/* Module: CCTV & ELV Site Survey. Data lives in project.data.cctv. */
+(function(){
+const T=['dome','bullet','ptz','kpoi','anpr'],TL={dome:'Dome',bullet:'Bullet',ptz:'PTZ',kpoi:'KPOI',anpr:'ANPR'};
+const ST=['New Install','Existing','Relocate','By Others','To Be Confirmed'];
+const D=p=>{const d=p.data.cctv||(p.data.cctv={});d.mdfLocation??='';d.compliance??='';d.notes??='';d.cams??=[];d.equip??=[];d.cables??=[];return d};
+const rt=r=>T.reduce((a,k)=>a+num(r[k]),0);
+const COLS={
+ cams:[{k:'mdf',l:'MDF / IDF'},{k:'floor',l:'Floor'},...T.map(k=>({k,l:TL[k],t:'num'})),{k:'rt',l:'Total',t:'calc'},{k:'pole',l:'Pole / Mounting'}],
+ equip:[{k:'desc',l:'Equipment Description'},{k:'spec',l:'Specification / Model'},{k:'qty',l:'Qty',t:'num'},{k:'rack',l:'Rack (U)'},{k:'conn',l:'Connector / Interface'},{k:'status',l:'Status',t:'sel',o:ST}],
+ cables:[{k:'tag',l:'Cable Tag ID'},{k:'from',l:'From'},{k:'to',l:'To'},{k:'type',l:'Cable / Conduit Type'},{k:'len',l:'Est. Length (m)',t:'num'},{k:'path',l:'Pathway / Route'}]};
+const BLANK={cams:()=>({mdf:'MDF',floor:'',dome:0,bullet:0,ptz:0,kpoi:0,anpr:0,pole:''}),equip:()=>({desc:'',spec:'',qty:1,rack:'',conn:'',status:'New Install'}),cables:()=>({tag:'',from:'',to:'',type:'',len:0,path:''})};
+const TITLE={cams:'Camera quantities by floor',equip:'Equipment rack & control room',cables:'Cabling & routes'},ADD={cams:'Add floor',equip:'Add equipment',cables:'Add cable route'};
+
+function issuesBy(p){const d=D(p),o={cams:[],equip:[],cables:[]};
+ if(!d.cams.length)o.cams.push('No camera entries yet');
+ d.cams.forEach((r,i)=>{if(!String(r.floor).trim())o.cams.push(`Camera row ${i+1}: floor missing`);else if(!rt(r))o.cams.push(`Floor ${r.floor}: no cameras entered`)});
+ if(!d.equip.length)o.equip.push('No equipment added');
+ d.equip.forEach((r,i)=>{if(!String(r.desc).trim())o.equip.push(`Equipment row ${i+1}: description missing`);if(num(r.qty)<1)o.equip.push(`Equipment row ${i+1}: quantity must be 1 or more`)});
+ if(!d.cables.length)o.cables.push('No cable routes added');
+ const seen={};d.cables.forEach((r,i)=>{const t=String(r.tag).trim().toUpperCase();if(!t)o.cables.push(`Cable row ${i+1}: tag missing`);else if(seen[t])o.cables.push(`Duplicate cable tag ${r.tag}`);seen[t]=1;
+  if(!String(r.from).trim()||!String(r.to).trim())o.cables.push(`Cable ${r.tag||i+1}: route From/To missing`);if(!num(r.len))o.cables.push(`Cable ${r.tag||i+1}: length missing`)});
+ return o}
+const issues=p=>Object.values(issuesBy(p)).flat();
+function progress(p){const d=D(p),b=issuesBy(p);const c=[d.cams.length&&!b.cams.length,d.equip.length&&!b.equip.length,d.cables.length&&!b.cables.length,d.mdfLocation.trim(),d.notes.trim()];return Math.round(100*c.filter(Boolean).length/c.length)}
+function summary(p){const d=D(p),s=k=>d.cams.reduce((a,r)=>a+num(r[k]),0);
+ return[['Total cameras',d.cams.reduce((a,r)=>a+rt(r),0)],...T.map(k=>[TL[k]+' cameras',s(k)]),['Floors / levels',new Set(d.cams.map(r=>String(r.floor).trim()).filter(Boolean)).size],
+ ['MDF / IDF locations',new Set(d.cams.map(r=>String(r.mdf).trim()).filter(Boolean)).size],['Equipment line items',d.equip.length],['Total equipment qty',d.equip.reduce((a,r)=>a+num(r.qty),0)],
+ ['Cable routes',d.cables.length],['Estimated cable length (m)',d.cables.reduce((a,r)=>a+num(r.len),0)],['Outstanding items',issues(p).length]]}
+function sheets(p){const d=D(p);return[
+ {name:'Camera Schedule',rows:[['S.No','MDF / IDF','Floor','Dome','Bullet','PTZ','KPOI','ANPR','Total','Pole / Mounting'],...d.cams.map((r,i)=>[i+1,r.mdf,r.floor,...T.map(k=>num(r[k])),rt(r),r.pole]),['','','TOTAL',...T.map(k=>d.cams.reduce((a,r)=>a+num(r[k]),0)),d.cams.reduce((a,r)=>a+rt(r),0),'']]},
+ {name:'Equipment Schedule',rows:[['Item','Description','Specification / Model','Qty','Rack (U)','Connector / Interface','Status'],...d.equip.map((r,i)=>[String(i+1).padStart(2,'0'),r.desc,r.spec,num(r.qty),r.rack,r.conn,r.status])]},
+ {name:'Cable Schedule',rows:[['Tag','From','To','Cable / Conduit Type','Est. Length (m)','Pathway / Route'],...d.cables.map(r=>[r.tag,r.from,r.to,r.type,num(r.len),r.path]),['','','','TOTAL',d.cables.reduce((a,r)=>a+num(r.len),0),'']]},
+ {name:'Site Notes',rows:[['Item','Detail'],['Primary MDF location',d.mdfLocation],['Compliance status',d.compliance],...d.notes.split('\n').filter(x=>x.trim()).map(x=>['Note',x.replace(/^[•\-\s]+/,'')])]}]}
+
+function render(el,p,ctx){const d=D(p);let tab='general';const q={cams:'',equip:'',cables:''};const TABS=[['general','General'],['cams','Cameras'],['equip','Equipment'],['cables','Cables'],['notes','Notes']];
+ const inp=(c,r,i,n)=>{const v=esc(r[c.k]),a=`data-k="${c.k}" aria-label="${esc(c.l)} row ${n}"`;
+  if(c.t==='num')return`<input type="number" inputmode="decimal" min="0" value="${v}" ${a}>`;
+  if(c.t==='sel')return`<select ${a}>${(c.o.includes(r[c.k])?c.o:[r[c.k],...c.o]).map(o=>`<option${o===r[c.k]?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  return`<input type="text" value="${v}" ${a}>`};
+ const grid=kind=>{const rows=d[kind],cols=COLS[kind],f=q[kind].toLowerCase();const idx=rows.map((_,i)=>i).filter(i=>!f||JSON.stringify(rows[i]).toLowerCase().includes(f));
+  let h=`<div class="row"><h2 class="sp">${TITLE[kind]}</h2><button class="pri" data-act="add">＋ ${ADD[kind]}</button></div>`;
+  if(!rows.length)return h+`<div class="card empty"><p>${kind==='cams'?'No camera entries yet. Add your first floor.':kind==='equip'?'No equipment added.':'No cable routes added.'}</p><button class="pri" data-act="add">＋ ${ADD[kind]}</button></div>`;
+  if(rows.length>5)h+=`<input type="search" data-q placeholder="Search…" aria-label="Search ${TITLE[kind]}" value="${esc(q[kind])}" style="margin-bottom:10px">`;
+  h+=`<div class="tw" data-kind="${kind}"><table><thead><tr><th>#</th>${cols.map(c=>`<th>${c.l}</th>`).join('')}<th></th></tr></thead><tbody>`;
+  idx.forEach(i=>{const r=rows[i];h+=`<tr data-i="${i}"><td data-label="#">${i+1}</td>${cols.map(c=>`<td data-label="${c.l}" class="${c.t==='num'?'n':''}">${c.t==='calc'?`<b data-rt>${rt(r)}</b>`:inp(c,r,i,i+1)}</td>`).join('')}<td><button class="dng" data-act="del" aria-label="Delete row ${i+1}">🗑 <span style="font-size:13px">Delete</span></button></td></tr>`});
+  if(!idx.length)h+=`<tr data-none><td>No matches</td></tr>`;h+='</tbody>';
+  if(kind==='cams')h+=`<tfoot><tr><td>TOTAL</td>${T.map(k=>`<td data-label="${TL[k]}" data-t="${k}"></td>`).join('')}<td data-label="All" data-t="all"></td></tr></tfoot>`;
+  if(kind==='equip')h+=`<tfoot><tr><td data-label="Total qty" data-t="qty"></td></tr></tfoot>`;
+  if(kind==='cables')h+=`<tfoot><tr><td data-label="Total length (m)" data-t="len"></td></tr></tfoot>`;
+  return h+'</table></div>'};
+ const body={
+  general:()=>`<div class="card form"><div><label for="g1">Primary MDF location</label><input id="g1" data-g="mdfLocation" value="${esc(d.mdfLocation)}"></div><div><label for="g2">MOI compliance status</label><input id="g2" data-g="compliance" value="${esc(d.compliance)}"></div></div>
+   <h2>Section status</h2><div class="card"><ul class="issues">${issues(p).map(i=>`<li>${esc(i)}</li>`).join('')||'<li style="color:var(--ok)">No outstanding items</li>'}</ul></div>`,
+  cams:()=>grid('cams'),equip:()=>grid('equip'),cables:()=>grid('cables'),
+  notes:()=>`<h2>Site observations & technical notes</h2><label for="nt" class="sr">Notes</label><textarea id="nt" data-g="notes" style="min-height:260px">${esc(d.notes)}</textarea>`};
+ const totals=()=>{const g=(n,v)=>el.querySelectorAll(`[data-t="${n}"]`).forEach(e=>e.textContent=v);
+  T.forEach(k=>g(k,d.cams.reduce((a,r)=>a+num(r[k]),0)));g('all',d.cams.reduce((a,r)=>a+rt(r),0));g('qty',d.equip.reduce((a,r)=>a+num(r.qty),0));g('len',d.cables.reduce((a,r)=>a+num(r.len),0))};
+ const draw=()=>{el.innerHTML=`<div class="tabs" role="tablist">${TABS.map(([k,l])=>`<button role="tab" aria-selected="${k===tab}" class="${k===tab?'on':''}" data-tab="${k}">${l}</button>`).join('')}</div><div id="cb">${body[tab]()}</div>`;totals()};
+ const kind=()=>tab;
+ el.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.tab){tab=b.dataset.tab;draw();return}
+  const k=kind();if(b.dataset.act==='add'){d[k].push(BLANK[k]());ctx.save();q[k]='';draw();const l=el.querySelectorAll('tr[data-i]');l[l.length-1]?.querySelector('input')?.focus()}
+  if(b.dataset.act==='del'){const i=+b.closest('tr').dataset.i,row=d[k][i];d[k].splice(i,1);ctx.save();draw();toast('Row deleted',{label:'Undo',fn:()=>{d[k].splice(i,0,row);ctx.save();draw()}})}};
+ el.oninput=e=>{const t=e.target;if(t.dataset.q!==undefined){q[kind()]=t.value;const pos=t.selectionStart;draw();const s=el.querySelector('[data-q]');s.focus();s.setSelectionRange(pos,pos);return}
+  if(t.dataset.g){d[t.dataset.g]=t.value;ctx.save();return}
+  const tr=t.closest('tr[data-i]');if(!tr)return;const k=kind(),r=d[k][+tr.dataset.i],c=t.dataset.k;r[c]=t.type==='number'?(t.value===''?0:Math.max(0,+t.value)):t.value;
+  tr.querySelector('[data-rt]')&&(tr.querySelector('[data-rt]').textContent=rt(r));totals();ctx.save()};
+ draw()}
+App.register({id:'cctv',name:'CCTV & ELV Site Survey',description:'Cameras by floor, rack equipment, cable routes and site notes.',category:'Surveys',icon:'📹',render,progress,summary,issues,sheets,
+ demo:()=>({mdfLocation:'Ground Floor Main Office Area',compliance:'Compliant (ANPR & Storage Standards)',
+ cams:[{mdf:'MDF',floor:'GF',dome:6,bullet:21,ptz:2,kpoi:2,anpr:2,pole:'2 wall-mounted poles'},{mdf:'MDF',floor:'MF',dome:1,bullet:0,ptz:0,kpoi:0,anpr:0,pole:'ANPR pole'}],
+ equip:[['EVS / NVR Storage Server (32CH)','EVS4 Series / RAID 5 Storage Configured',2,'4U Total','Dual RJ45 Gigabit Ports'],['24-Port PoE+ Managed Network Switch','L2+ Industrial Switch / 370W Budget',2,'2U Total','RJ45 PoE / SFP+ Fiber Uplink'],['ANPR Processing Server','Dedicated License Plate Processing Unit',1,'2U','Dual RJ45 / HDMI Output'],['Cat6A Master Patch Panel','24-Port Keystone Patch Panel',2,'2U Total','RJ45 Pass-Through'],['Online UPS Backup Power Unit','3KVA Rack-Mount / Smart-UPS',1,'3U','Hardwired AC Terminal Block'],['Monitoring Workstation Station','PC Workstation + Dual 32" Display',1,'Desk Mount','HDMI / DisplayPort Output']].map(a=>({desc:a[0],spec:a[1],qty:a[2],rack:a[3],conn:a[4],status:'New Install'})),
+ cables:[['CBL-CAM-GF','Ground Floor Cameras (33 Nos)','MDF','Outdoor Cat6 FTP / Heavy PVC Pipe',85,'Cable Tray & Perimeter Underground Conduit'],['CBL-CAM-MF','Mezzanine Floor Camera (1 No)','MDF','Indoor Cat6 UTP / PVC Trunking',30,'Concealed Ceiling Void Trunking'],['CBL-ANPR-01','External ANPR Pole','MDF Server','Cat6 FTP Direct Burial / GI Pipe',60,'Underground Trenching & Galvanized Pipe'],['CBL-UPLINK','MDF Switch 01','Control Workstation','OS2 Single-Mode Fiber (LC Patch)',45,'Overhead Internal Cable Ladder']].map(a=>({tag:a[0],from:a[1],to:a[2],type:a[3],len:a[4],path:a[5]})),
+ notes:'• The equipment room and monitoring room may be located within the office area, subject to client confirmation of the final locations for the CCTV equipment rack, monitoring station, and control equipment.\n• All outdoor cameras (including ANPR and PTZ) require proper grounding, surge protection, and waterproof junction boxes.\n• ANPR coverage requires minimum 95% accuracy verification during daytime and nighttime testing prior to final sign-off.'})});
+})();
+</script>
+<script>
+/* Shell: hash router (#/ , #/p/<id> , #/p/<id>/<module>) + dashboard + project views. */
+const STATUSES=['Not Started','In Progress','Needs Review','Completed'];
+const get=id=>App.projects.find(p=>p.id===id);
+const projPct=p=>{const m=ready().filter(x=>x.progress);return m.length?Math.round(m.reduce((a,x)=>a+x.progress(p),0)/m.length):0};
+const touched=p=>ready().some(m=>p.data[m.id]);
+const ctxFor=p=>({save:()=>{if(p.status==='Not Started')p.status='In Progress';Store.save(p)}});
+const view=$('#view');let flt={q:'',s:''};
+function crumbs(a){$('#crumbs').innerHTML=a.map(([t,h])=>h?`<a href="${h}">${esc(t)}</a>`:esc(t)).join(' › ')}
+async function addDemo(){const p=newProject({name:'MIRRIKH CONTRACTING STORE & GARAGE',client:'Mirrikh Contracting',site:'Store & Garage',date:'2026-10-14',status:'In Progress',demo:true});App.mods.forEach(m=>m.demo&&(p.data[m.id]=m.demo()));App.projects.push(p);await Store.put(p).catch(()=>{});return p}
+async function create(){const r=await modal(`<h2 style="margin-top:0">New project</h2><label for="np">Project name *</label><input id="np" name="n" required autofocus>`,[{t:'Cancel',v:'no'},{t:'Create',v:'ok',c:'pri'}]);
+ const n=$('#np')?.value.trim();if(r!=='ok')return;if(!n)return toast('Project name is required',{err:1});const p=newProject({name:n});App.projects.push(p);Store.save(p);location.hash='#/p/'+p.id}
+async function remove(p){if(!await confirmBox(`Delete "${p.name}"? Export a JSON backup first if unsure. This cannot be undone.`))return;
+ try{await Store.del(p.id)}catch(e){}App.projects=App.projects.filter(x=>x!==p);toast('Project deleted');location.hash='#/';route()}
+async function dup(p){const c=newProject(Object.assign(JSON.parse(JSON.stringify(p)),{id:uid(),name:p.name+' (copy)',demo:false,created:Date.now()}));App.projects.push(c);Store.save(c);toast('Duplicated');route()}
+function importFile(){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=async()=>{try{const p=validateProject(JSON.parse(await i.files[0].text()));App.projects.push(p);Store.save(p);toast('Imported "'+p.name+'"');location.hash='#/p/'+p.id}catch(e){toast('Import failed: '+e.message,{err:1})}};i.click()}
+function home(){crumbs([['Home']]);const ps=[...App.projects].sort((a,b)=>b.updated-a.updated),last=ps.find(p=>!p.demo)||ps[0];
+ const list=ps.filter(p=>(!flt.q||(p.name+p.client+p.site).toLowerCase().includes(flt.q.toLowerCase()))&&(!flt.s||p.status===flt.s));
+ view.innerHTML=`<h1>Workspace</h1><div class="row"><button class="pri" id="n">＋ New project</button>${last?`<a class="btn" href="#/p/${last.id}">▶ Continue: ${esc(last.name.slice(0,30))}</a>`:''}<button id="i">⬆ Import project</button></div>
+ <h2>Projects</h2>${ps.length?`<div class="row" style="margin-bottom:10px"><input id="q" type="search" placeholder="Search projects" aria-label="Search projects" value="${esc(flt.q)}" style="flex:2;min-width:180px"><select id="s" aria-label="Filter status" style="flex:1;min-width:140px"><option value="">All statuses</option>${STATUSES.map(s=>`<option${flt.s===s?' selected':''}>${s}</option>`).join('')}</select></div>`:''}
+ <div class="grid" id="pl">${list.map(p=>`<div class="card"><div class="row"><b class="sp">${esc(p.name||'Untitled')}</b>${p.demo?'<span class="badge demo">Demo</span>':''}</div><div style="color:var(--mut);font-size:13px">${esc([p.client,p.site].filter(Boolean).join(' · '))||'—'}<br>Updated ${fmtDate(p.updated)}</div>
+ <div class="row" style="margin:10px 0"><span class="badge">${p.status}</span><span class="sp"></span><small>${projPct(p)}%</small></div><div class="bar"><i style="width:${projPct(p)}%"></i></div>
+ <div class="row" style="margin-top:12px"><a class="btn pri" href="#/p/${p.id}">Open</a><button data-x="${p.id}" aria-label="Export Excel for ${esc(p.name)}">Excel</button></div></div>`).join('')}</div>
+ ${!ps.length?`<div class="card empty"><p>Create a project to begin.</p><button class="pri" id="n2">＋ New project</button> <button id="d">Load demo project</button></div>`:!list.length?'<div class="card empty">No projects match.</div>':''}
+ <h2>Tools</h2><div class="grid">${App.mods.map(m=>`<div class="card"><div class="row"><span style="font-size:24px" aria-hidden="true">${m.icon}</span><b class="sp">${esc(m.name)}</b>${m.status==='soon'?'<span class="badge soon">Coming soon</span>':''}</div><p style="color:var(--mut);font-size:14px;margin:6px 0 10px">${esc(m.description)}</p>
+ ${m.status==='ready'?`<button data-m="${m.id}" ${last?'':'disabled'}>${last?'Open in latest project':'Create a project first'}</button>`:''}</div>`).join('')}</div>`;
+ $('#n').onclick=create;$('#i').onclick=importFile;$('#n2')&&($('#n2').onclick=create);$('#d')&&($('#d').onclick=async()=>{await addDemo();route()});
+ $('#q')&&($('#q').oninput=e=>{flt.q=e.target.value;const pos=e.target.selectionStart;home();const n=$('#q');n.focus();n.setSelectionRange(pos,pos)});$('#s')&&($('#s').onchange=e=>{flt.s=e.target.value;home()});
+ view.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>exportExcel(get(b.dataset.x)));view.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>location.hash=`#/p/${last.id}/${b.dataset.m}`)}
+function proj(p){crumbs([['Home','#/'],[p.name||'Project']]);const f=[['name','Project name *'],['client','Client'],['site','Site'],['location','Location'],['ref','Project reference'],['surveyor','Engineer / Surveyor']];
+ const sum=projectSummary(p),iss=projectIssues(p);
+ view.innerHTML=`<div class="row"><h1 class="sp">${esc(p.name||'Untitled')} ${p.demo?'<span class="badge demo">Demo</span>':''}</h1></div>
+ <div class="row"><button class="pri" id="xl">⬇ Excel</button><button id="js">Export JSON</button><button id="pr">Print report</button><button id="dp">Duplicate</button><button id="dl" class="dng">Delete</button></div>
+ <h2>Modules</h2><div class="grid">${ready().map(m=>`<div class="card"><div class="row"><span aria-hidden="true">${m.icon}</span><b class="sp">${esc(m.name)}</b></div><div class="row" style="margin:8px 0"><small class="sp">${p.data[m.id]?'':'Not started · '}${m.progress?m.progress(p)+'%':''}</small></div><div class="bar"><i style="width:${m.progress?m.progress(p):0}%"></i></div><a class="btn pri" style="margin-top:10px" href="#/p/${p.id}/${m.id}">${p.data[m.id]?'Continue':'Start'}</a></div>`).join('')}</div>
+ ${touched(p)?`<h2>Summary</h2><div class="stats">${sum.map(([l,v])=>`<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('')}</div>`:''}
+ ${iss.length?`<h2>Outstanding items (${iss.length})</h2><div class="card"><ul class="issues">${iss.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`:''}
+ <h2>Project details</h2><div class="card form">${f.map(([k,l])=>`<div><label for="f_${k}">${l}</label><input id="f_${k}" data-f="${k}" value="${esc(p[k])}"></div>`).join('')}
+ <div><label for="f_date">Survey date</label><input id="f_date" type="date" data-f="date" value="${esc(p.date)}"></div><div><label for="f_status">Status</label><select id="f_status" data-f="status">${STATUSES.map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}</select></div>
+ <div style="grid-column:1/-1"><label for="f_notes">Notes</label><textarea id="f_notes" data-f="notes" style="min-height:90px">${esc(p.notes)}</textarea></div></div>`;
+ view.oninput=e=>{const k=e.target.dataset.f;if(!k)return;p[k]=e.target.value;if(k==='name')crumbs([['Home','#/'],[p.name||'Project']]);Store.save(p)};
+ $('#xl').onclick=()=>exportExcel(p);$('#js').onclick=()=>exportJSON(p);$('#pr').onclick=()=>printReport(p);$('#dp').onclick=()=>dup(p);$('#dl').onclick=()=>remove(p)}
+function modView(p,m){crumbs([['Home','#/'],[p.name,'#/p/'+p.id],[m.name]]);view.oninput=null;view.innerHTML=`<div class="row"><a class="btn" href="#/p/${p.id}">← ${esc(p.name)}</a><span class="sp"></span><button id="xl">⬇ Excel</button><button id="pr">Print</button></div><div id="mv"></div>`;
+ $('#xl').onclick=()=>exportExcel(p);$('#pr').onclick=()=>printReport(p);const el=$('#mv');el.oninput=el.onclick=null;
+ try{m.render(el,p,ctxFor(p))}catch(e){console.error(e);el.innerHTML='<div class="card">This module failed to load. Your data is safe – go back and try again.</div>';toast('Module error: '+e.message,{err:1})}}
+function route(){view.oninput=null;const[,t,id,mid]=location.hash.split('/');try{
+ if(t==='p'){const p=get(id);if(!p){toast('Project not found',{err:1});location.hash='#/';return home()}
+  if(mid){const m=App.mod(mid);if(m&&m.status==='ready')return modView(p,m)}return proj(p)}home()}catch(e){console.error(e);view.innerHTML='<div class="card">Something went wrong. <a href="#/">Back to home</a></div>'}
+ window.scrollTo(0,0)}
+(async()=>{await Store.open();App.projects=(await Store.load()).map(p=>{try{return validateProjectKeep(p)}catch(e){return null}}).filter(Boolean);
+ if(!App.projects.length&&Store.db&&!localStorage.getItem('fk_seeded')){await addDemo();localStorage.setItem('fk_seeded','1')}
+ window.addEventListener('hashchange',route);route()})();
+function validateProjectKeep(p){if(!p||typeof p.name!=='string'||!p.data)throw 0;return Object.assign(newProject(),p)}
+</script>
+</body></html>
