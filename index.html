@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>FieldKit – Field Engineering Workspace</title>
 <style>
-:root{--bg:#f3f5f8;--card:#fff;--ink:#14202e;--mut:#5b6b7e;--line:#dde3ea;--pri:#0b5cad;--pri2:#e8f1fb;--ok:#14804a;--warn:#b26a00;--bad:#c0262d;--r:12px}
-@media(prefers-color-scheme:dark){:root{--bg:#0e141b;--card:#18212b;--ink:#e8eef5;--mut:#9aa9ba;--line:#2a3846;--pri:#4d9bea;--pri2:#16283b;--ok:#4cc28a;--warn:#f0b04a;--bad:#ff7b80}}
-*{box-sizing:border-box}body{margin:0;font:16px/1.45 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+:root{--bg:#f3f5f8;--card:#fff;--ink:#14202e;--mut:#5b6b7e;--line:#dde3ea;--pri:#0b5cad;--pri2:#e8f1fb;--ok:#14804a;--warn:#b26a00;--warn2:#fff4e0;--bad:#c0262d;--r:12px;--hh:56px}
+@media(prefers-color-scheme:dark){:root{--bg:#0e141b;--card:#18212b;--ink:#e8eef5;--mut:#9aa9ba;--line:#2a3846;--pri:#4d9bea;--pri2:#16283b;--ok:#4cc28a;--warn:#f0b04a;--warn2:#2e2414;--bad:#ff7b80}}
+*{box-sizing:border-box}html{scroll-padding-top:130px}
+body{margin:0;font:16px/1.45 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:env(safe-area-inset-bottom)}
 a{color:var(--pri)}:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
-.top{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top{position:sticky;top:0;z-index:6;display:flex;gap:12px;align-items:center;min-height:var(--hh);padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top));background:var(--card);border-bottom:1px solid var(--line)}
 .brand{font-weight:800;text-decoration:none;color:var(--ink);font-size:18px}.brand b{color:var(--pri)}
 #crumbs{flex:1;color:var(--mut);font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--pri2);color:var(--pri);white-space:nowrap}.pill.saving{color:var(--warn)}.pill.err{color:var(--bad)}
@@ -20,27 +22,110 @@ button,.btn,select,input,textarea{font:inherit;color:var(--ink)}
 button,.btn{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 button:hover{background:var(--pri2)}.pri{background:var(--pri);color:#fff;border-color:var(--pri)}.pri:hover{background:var(--pri);filter:brightness(1.1)}.dng{color:var(--bad)}
 button:disabled{opacity:.5;cursor:not-allowed}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 input,select,textarea{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+input:disabled{opacity:.55;cursor:not-allowed}
 textarea{min-height:140px}label{display:block;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:4px}
 .form{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.err{color:var(--bad);font-size:13px}
 .badge{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--pri2);color:var(--pri)}.badge.demo{background:#fff3d6;color:#8a5a00}.badge.soon{background:var(--line);color:var(--mut)}
 .bar{height:8px;background:var(--line);border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
 .stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}.stat{padding:12px;border-radius:10px;background:var(--pri2)}.stat b{font-size:24px;display:block}.stat span{font-size:12px;color:var(--mut)}
-.tabs{display:flex;gap:6px;overflow-x:auto;position:sticky;top:57px;background:var(--bg);padding:8px 0;z-index:4}.tabs button{white-space:nowrap}.tabs .on{background:var(--pri);color:#fff;border-color:var(--pri)}
 .empty{text-align:center;padding:32px 16px;color:var(--mut)}.empty p{margin:0 0 12px}
-table{width:100%;border-collapse:collapse;background:var(--card)}th{font-size:12px;text-align:left;color:var(--mut);padding:8px}td{padding:6px 8px;border-top:1px solid var(--line)}tfoot td{font-weight:700;background:var(--pri2)}
-td input,td select{min-height:40px}td.n input{text-align:center;min-width:64px}.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
 .issues li{color:var(--warn);margin:4px 0}
-#toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:grid;gap:8px;z-index:20;width:min(92vw,420px)}
+
+/* Module tabs */
+.tabs{display:flex;gap:6px;overflow-x:auto;position:sticky;top:var(--hh);background:var(--bg);padding:8px 0;z-index:5;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;flex:none}.tabs .on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.tc{font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--warn2);color:var(--warn);display:inline-grid;place-items:center}.tc:empty{display:none}.on .tc{background:#fff;color:var(--pri)}
+.sh{display:flex;align-items:center;gap:10px;margin:20px 0 6px}.sh h2{flex:1;margin:0}
+.intro{margin:0 0 12px;color:var(--mut);font-size:14px;max-width:70ch}
+.hint{font-size:13px;color:var(--mut);margin:8px 2px}
+.iss{margin:0 0 12px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;background:var(--card);font-size:14px}
+.iss summary{cursor:pointer;padding:8px 12px;color:var(--warn);font-weight:600}.iss ul{margin:0;padding:0 12px 10px 32px}.iss li{margin:3px 0;color:var(--ink)}
+
+/* Data tables (desktop) */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+table{width:100%;border-collapse:collapse;background:var(--card)}
+th{font-size:12px;text-align:left;color:var(--mut);padding:10px 8px;white-space:nowrap;font-weight:600}
+td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:middle;background:var(--card)}
+th.n{text-align:center}td.n input{text-align:center;min-width:64px}
+td input,td select{min-height:40px}
+.t-cams{min-width:760px}.t-cables{min-width:900px}.t-mounts,.t-idfs{min-width:700px}.t-equip{min-width:820px}
+td.h{width:1%;white-space:nowrap;padding-left:4px;color:var(--mut);font-size:13px;font-variant-numeric:tabular-nums}
+td.h .ix{display:inline-block;min-width:18px;text-align:right}
+td.x{width:1%;padding-right:6px}
+.hd{min-height:40px;width:32px;padding:0;border:0;background:transparent;color:var(--mut);cursor:grab;touch-action:none;vertical-align:middle}
+.hd:hover{background:var(--pri2);color:var(--pri)}.hd:disabled{cursor:not-allowed;opacity:.3;background:transparent}
+.ib{min-height:40px;width:40px;padding:0;border-color:transparent;background:transparent}.ib.dng:hover{background:#c0262d14;border-color:#c0262d40}
+tfoot td{font-weight:700;background:var(--pri2);border-top:2px solid var(--pri)}tfoot td.n{text-align:center}
+.sums{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-weight:400}.sums b{font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;line-height:1.2;min-height:24px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--mut);white-space:nowrap;font-weight:500}
+button.chip{cursor:pointer;color:var(--pri);border-color:var(--pri)}button.chip:hover{background:var(--pri2)}
+.chip.lk{color:var(--ok);border-color:currentColor}.chip.wn{color:var(--warn);border-color:currentColor;background:var(--warn2)}.chip svg.i{width:13px;height:13px}
+.sums .chip{font-size:13px}.sums .chip b{color:var(--ink)}
+.cell{display:flex;flex-direction:column;gap:5px;min-width:0;align-items:flex-start}.cell>input,.cell>select{width:100%}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;width:100%;min-width:176px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--bg);isolation:isolate}
+.seg::before{content:"";position:absolute;z-index:-1;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:7px;background:var(--pri);box-shadow:0 1px 3px #0b2a5240;transition:transform .26s cubic-bezier(.3,.8,.3,1)}
+.seg[data-v=total]::before{transform:translateX(100%)}
+.seg button{min-height:34px;padding:4px 8px;border:0;border-radius:7px;background:transparent;font-size:13px;color:var(--mut);transition:color .2s}
+.seg button:hover{background:transparent;color:var(--ink)}.seg button[aria-pressed=true],.seg button[aria-pressed=true]:hover{color:#fff;font-weight:600}
+.rw{position:relative;width:100%;min-width:136px}.rw input{padding-right:76px}.rw .in{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex}.rw .chip{min-height:26px;padding:2px 8px}
+.combo{position:relative;width:100%;min-width:150px}.combo input{padding-right:40px}
+.combo select{position:absolute;inset:0 0 0 auto;width:40px!important;min-width:0!important;max-width:40px;min-height:0;height:100%;padding:0;opacity:0;cursor:pointer}
+.combo .chev{position:absolute;right:11px;top:50%;width:16px;height:16px;transform:translateY(-50%);pointer-events:none;color:var(--mut)}
+.calc{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.calc small{display:block;font-weight:400;color:var(--mut);font-size:11px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mut);margin:-4px 0 12px}
+.addRow{width:100%;margin-top:10px;border-style:dashed;color:var(--pri);background:transparent}
+.fab{display:none}
+@media(min-width:721px){td.n{width:104px}td.nt{width:34%;min-width:220px}td.sl select{min-width:140px}td.rn{width:150px}}
+/* drag */
+tr.dragging{position:relative;z-index:4}
+tr.dragging td{background:var(--pri2)}
+tr.dragging .hd{cursor:grabbing;color:var(--pri)}
+body.dragging-on,body.dragging-on *{user-select:none;-webkit-user-select:none;cursor:grabbing!important}
+
+#toasts{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:grid;gap:8px;z-index:20;width:min(92vw,420px)}
 .toast{background:#1d2a38;color:#fff;padding:12px 14px;border-radius:10px;display:flex;gap:10px;align-items:center}.toast.err{background:var(--bad)}.toast button{min-height:36px;background:transparent;color:#9cc9ff;border-color:#9cc9ff}
-dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);max-width:460px;width:92vw}dialog::backdrop{background:#0008}
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);max-width:540px;width:92vw;padding:20px}dialog::backdrop{background:#0008}
+.mut{color:var(--mut)}
+.opts{display:grid;gap:10px;margin-top:12px}
+.opt{display:flex;gap:14px;align-items:center;border:2px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;margin:0;color:var(--ink);font-weight:400;font-size:15px}
+.opt:has(input:checked){border-color:var(--pri);background:var(--pri2)}
+.opt input{width:20px;min-height:20px;margin:0;accent-color:var(--pri);flex:none}
+.opt b{display:block}.opt small{display:block;color:var(--mut);font-size:13px;margin-top:2px}
+.opt svg{flex:none;width:64px;height:52px}
 #report{display:none}
-@media(max-width:720px){main{padding:12px}
- .tw{border:0}table,tbody,tr,td,tfoot{display:block}thead{display:none}
- tr[data-i]{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;padding:6px 10px}
- td{border:0;display:flex;align-items:center;justify-content:space-between;gap:10px}td::before{content:attr(data-label);font-size:12px;font-weight:600;color:var(--mut);flex:0 0 38%}
- td input,td select{flex:1;min-width:0}td.n input{text-align:right}tfoot tr{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--pri2);border-radius:var(--r)}tfoot td{padding:0;background:none}tfoot td::before{flex:none}}
-@media print{body>*:not(#report){display:none!important}#report{display:block;color:#000;font:12px/1.4 sans-serif}#report table{display:table}#report tr,#report td{display:revert}#report td,#report th{border:1px solid #999;padding:3px 6px}#report h2{page-break-after:avoid}}
+
+@media(max-width:720px){
+ :root{--hh:52px}main{padding:12px 12px 112px}
+ .addTop,.addRow{display:none}
+ .fab{display:inline-flex;position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:15;border-radius:99px;min-height:56px;padding:0 22px 0 18px;font-weight:600;box-shadow:0 8px 24px #0b2a5240,0 2px 6px #0b2a5230}
+ #toasts{bottom:calc(88px + env(safe-area-inset-bottom))}
+ .tw{border:0;overflow:visible;background:transparent}
+ table[class^=t-]{min-width:0}
+ table,tbody,tr,td,tfoot{display:block;width:100%}thead{display:none}
+ tbody tr[data-i]{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;padding:2px 12px 8px}
+ tbody td{border:0;display:flex;align-items:center;gap:10px;padding:5px 0;background:transparent}
+ tbody td::before{content:attr(data-label);font-size:12px;font-weight:600;color:var(--mut);flex:0 0 34%}
+ tbody td>input,tbody td>select,tbody td>.cell,tbody td>.combo,tbody td>.rw,tbody td>.seg,tbody td>.calc{flex:1;min-width:0}
+ td.h{width:auto;padding:4px 48px 6px 0;border-bottom:1px solid var(--line);margin-bottom:4px;gap:4px;font-weight:600}td.h::before{display:none}
+ td.h .ix::before{content:"Row "}td.h .ix{text-align:left}
+ td.x{position:absolute;top:2px;right:4px;width:auto;padding:0}td.x::before{display:none}
+ td.n input{text-align:left}
+ tr.dragging td{background:transparent}tr.dragging{background:var(--pri2)!important;box-shadow:0 10px 28px #0b2a5240}
+ tr[data-none] td::before{display:none}
+ tfoot tr{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px;background:var(--pri2);border-radius:var(--r);border:1px solid var(--line)}
+ tfoot td{padding:0;border:0;background:none;display:inline-flex;gap:6px;width:auto}tfoot td:empty{display:none}
+ tfoot td[data-label]::before{content:attr(data-label)":";font-weight:500;color:var(--mut)}tfoot td.fl{width:100%}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{body>*:not(#report){display:none!important}#report{display:block;color:#000;font:11px/1.4 Calibri,Arial,sans-serif}
+ #report table{display:table;width:100%;border-collapse:collapse;margin-bottom:10px}#report tr{display:table-row}#report td,#report th{display:table-cell;border:1px solid #bfbfbf;padding:3px 6px;text-align:left}
+ #report th{background:#2f5597!important;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #report .ttl{background:#17365d;color:#fff;padding:10px 12px;font-size:18px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0}
+ #report h2{background:#1f4e78;color:#fff;padding:5px 8px;font-size:12px;text-transform:uppercase;page-break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:14px 0 6px}
+ #report tr.tot td{font-weight:700;background:#d9e1f2;-webkit-print-color-adjust:exact;print-color-adjust:exact}#report .k{background:#f2f2f2;font-weight:700;width:30%}
+ #report .note{background:#fff2cc;border-left:4px solid #bf9000;padding:5px 8px;margin:3px 0;color:#7f6000;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head><body>
 <header class="top">
@@ -51,11 +136,12 @@ dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card
 <main id="view" tabindex="-1"></main>
 <footer class="foot">Data is stored locally in this browser/device only. Use <b>Export JSON</b> regularly for backups.</footer>
 <div id="toasts" aria-live="polite"></div>
+<div id="sr" class="sr" aria-live="polite"></div>
 <dialog id="dlg"></dialog>
 <div id="report"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" onerror="void 0"></script>
 <script>
-/* Core: namespace, helpers, module registry, toasts, dialogs */
+/* Core: namespace, helpers, module registry, toasts, dialogs, icons */
 const App={mods:[],projects:[],
  register(m){if(this.mods.some(x=>x.id===m.id))return console.warn('duplicate module',m.id);this.mods.push(Object.assign({status:'ready',category:'General',icon:'▣'},m))},
  mod(id){return this.mods.find(m=>m.id===id)}};
@@ -63,7 +149,15 @@ const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const num=v=>{v=parseFloat(v);return isFinite(v)&&v>0?v:0};
+const fm=n=>(+n||0).toLocaleString(undefined,{maximumFractionDigits:2});
 const fmtDate=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+const say=m=>{const s=$('#sr');s.textContent='';setTimeout(()=>s.textContent=m,30)};
+const I={
+ plus:'<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+ trash:'<svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
+ grip:'<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
+ link:'<svg class="i" viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+ dl:'<svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>'};
 function toast(msg,o={}){const t=document.createElement('div');t.className='toast'+(o.err?' err':'');t.setAttribute('role',o.err?'alert':'status');t.innerHTML=`<span class="sp">${esc(msg)}</span>`;
  if(o.label){const b=document.createElement('button');b.textContent=o.label;b.onclick=()=>{o.fn();t.remove()};t.appendChild(b)}
  $('#toasts').appendChild(t);setTimeout(()=>t.remove(),o.label?7000:o.err?6000:3000)}
@@ -87,103 +181,365 @@ function newProject(over={}){return Object.assign({id:uid(),name:'',client:'',si
 function validateProject(o){if(!o||typeof o!=='object'||typeof o.name!=='string'||!o.data||typeof o.data!=='object')throw new Error('Not a valid FieldKit project file');return newProject(Object.assign({},o,{id:uid(),demo:false,updated:Date.now()}))}
 </script>
 <script>
-/* Export: Excel (one sheet per area), JSON backup, printable report. Modules supply sheets(p) -> [{name,rows}] */
+/* Export: styled Excel (single sheet or sheet per section), JSON backup, printable report.
+   Modules supply report(p) -> [section]. A section can have: title, name (sheet name), kv [[k,v]], paras [text],
+   cols [{k,h,w,num,sum,calc,fmt,f(row,L,P),style(v)}], rows [{k:v}], total (label), sub {title,cols,rows,total,at}. */
 const ready=()=>App.mods.filter(m=>m.status==='ready');
 function projectSummary(p){return ready().filter(m=>m.summary).flatMap(m=>m.summary(p))}
 function projectIssues(p){const o=[];if(!p.name.trim())o.push('Project name is missing');ready().filter(m=>m.issues).forEach(m=>m.issues(p).forEach(i=>o.push(m.name+': '+i)));return o}
-function projectSheets(p){
- const info=[['Field','Value'],['Project',p.name],['Client',p.client],['Site',p.site],['Location',p.location],['Survey Date',p.date],['Engineer / Surveyor',p.surveyor],['Reference',p.ref],['Status',p.status],['Notes',p.notes]];
- const out=[{name:'Project Information',rows:info},{name:'Summary',rows:[['Metric','Value'],...projectSummary(p)]}];
- ready().filter(m=>m.sheets).forEach(m=>out.push(...m.sheets(p)));return out}
-function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function reportModel(p){const info=[['Project',p.name],['Client',p.client],['Site',p.site],['Location',p.location],['Survey date',p.date],['Engineer / surveyor',p.surveyor],['Reference',p.ref],['Status',p.status]];
+ if(String(p.notes||'').trim())info.push(['Project notes',p.notes]);
+ return{p,info,summary:projectSummary(p),issues:projectIssues(p),sections:ready().filter(m=>m.report).flatMap(m=>m.report(p))}}
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 const fname=p=>(p.name||'project').replace(/[^\w\-]+/g,'_').slice(0,50);
-function exportExcel(p){try{if(!window.XLSX)return exportXLS(p);
- const wb=XLSX.utils.book_new();projectSheets(p).forEach(s=>{const ws=XLSX.utils.aoa_to_sheet(s.rows);
-  ws['!cols']=s.rows[0].map((_,c)=>({wch:Math.min(60,Math.max(10,...s.rows.map(r=>String(r[c]??'').length)))}));XLSX.utils.book_append_sheet(wb,ws,s.name.slice(0,31))});
- XLSX.writeFile(wb,fname(p)+'.xlsx');toast('Excel exported')}catch(e){toast('Excel export failed: '+e.message,{err:1})}}
-function exportJSON(p){try{download(new Blob([JSON.stringify(p,null,1)],{type:'application/json'}),fname(p)+'.fieldkit.json');toast('Backup downloaded')}catch(e){toast('Export failed: '+e.message,{err:1})}}
-function printReport(p){const t=r=>`<table><thead><tr>${r[0].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${r.slice(1).map(x=>`<tr>${x.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
- $('#report').innerHTML=`<h1>Site Survey Report – ${esc(p.name)}</h1>`+projectSheets(p).map(s=>`<h2>${esc(s.name)}</h2>${t(s.rows)}`).join('')+
- `<h2>Review / Sign-off</h2><table><tr><td>Prepared by: ${esc(p.surveyor)}<br><br>Signature / Date:</td><td>Reviewed by:<br><br>Signature / Date:</td></tr></table>`;
- window.print()}
 
-function exportXLS(p){const c=v=>typeof v==='number'?`<Cell><Data ss:Type="Number">${v}</Data></Cell>`:`<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`;
- const ws=projectSheets(p).map(s=>`<Worksheet ss:Name="${esc(s.name.slice(0,31))}"><Table>${s.rows.map(r=>`<Row>${r.map(c).join('')}</Row>`).join('')}</Table></Worksheet>`).join('');
- download(new Blob([`<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${ws}</Workbook>`],{type:'application/vnd.ms-excel'}),fname(p)+'.xls');toast('Exported .xls (offline mode)')}
+/* ---- Export dialog ---- */
+const PV1='<svg viewBox="0 0 64 52" aria-hidden="true"><rect x="1" y="1" width="62" height="50" rx="5" fill="var(--card)" stroke="var(--line)"/><rect x="6" y="6" width="52" height="6" rx="1" fill="#17365d"/><rect x="6" y="15" width="52" height="3" fill="#1f4e78"/><rect x="6" y="20" width="52" height="7" fill="#dbe6f4"/><rect x="6" y="30" width="52" height="3" fill="#1f4e78"/><rect x="6" y="35" width="52" height="7" fill="#dbe6f4"/><rect x="6" y="44" width="52" height="3" fill="#fff2cc"/></svg>';
+const PV2='<svg viewBox="0 0 64 52" aria-hidden="true"><rect x="1" y="1" width="62" height="50" rx="5" fill="var(--card)" stroke="var(--line)"/><rect x="6" y="6" width="52" height="6" rx="1" fill="#17365d"/><rect x="6" y="15" width="52" height="4" fill="#2f5597"/><rect x="6" y="21" width="52" height="16" fill="#dbe6f4"/><rect x="5" y="42" width="12" height="6" rx="1" fill="#1f4e78"/><rect x="19" y="42" width="12" height="6" rx="1" fill="var(--line)"/><rect x="33" y="42" width="12" height="6" rx="1" fill="var(--line)"/><rect x="47" y="42" width="12" height="6" rx="1" fill="var(--line)"/></svg>';
+async function openExport(p){if(!p)return;let last='one';try{last=localStorage.getItem('fk.xlLayout')||'one'}catch(e){}
+ const secs=reportModel(p).sections.map(s=>s.name).join(', ');
+ const r=await modal(`<h2 style="margin-top:0">Export to Excel</h2><p class="mut" style="margin:0">How should the workbook be laid out?</p>
+ <div class="opts" role="radiogroup" aria-label="Workbook layout">
+  <label class="opt">${PV1}<span class="sp"><b>One sheet</b><small>Every section stacked on a single report sheet. Easy to print and send.</small></span><input type="radio" name="lay" value="one" ${last==='one'?'checked':''}></label>
+  <label class="opt">${PV2}<span class="sp"><b>Sheet per section</b><small>An overview sheet, then ${esc(secs)} on separate sheets with filters and frozen headers.</small></span><input type="radio" name="lay" value="multi" ${last==='multi'?'checked':''}></label>
+ </div>`,[{t:'Cancel',v:'no'},{t:'Download Excel',v:'ok',c:'pri'}]);
+ if(r!=='ok')return;const lay=$('#dlg input[name=lay]:checked')?.value||'one';try{localStorage.setItem('fk.xlLayout',lay)}catch(e){}
+ toast('Preparing Excel…');
+ try{const m=reportModel(p),X=await loadExcelJS();
+  if(X){await buildXL(m,lay);toast('Excel downloaded')}
+  else if(window.XLSX){plainXLSX(m,lay);toast('Exported without colours: the styling library could not load (offline?)')}
+  else{xmlXLS(m,lay)}}
+ catch(e){console.error(e);toast('Excel export failed: '+e.message,{err:1})}}
+let xlP=null;
+function loadExcelJS(){if(window.ExcelJS)return Promise.resolve(window.ExcelJS);
+ return xlP??=new Promise(res=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+  const t=setTimeout(()=>{xlP=null;res(null)},15000);s.onload=()=>{clearTimeout(t);res(window.ExcelJS||null)};s.onerror=()=>{clearTimeout(t);xlP=null;res(null)};document.head.appendChild(s)})}
+
+/* ---- Styled workbook (ExcelJS) ---- */
+const XC={title:'FF17365D',band:'FF1F4E78',head:'FF2F5597',headLine:'FF8EA9DB',zebra:'FFEEF3FA',line:'FFBFBFBF',total:'FFD9E1F2',calc:'FFDDEBF7',key:'FFF2F2F2',
+ noteFill:'FFFFF2CC',noteInk:'FF7F6000',noteEdge:'FFBF9000',issFill:'FFFCE4D6',issInk:'FF843C0C',issEdge:'FFC55A11',sub:'FF666666',white:'FFFFFFFF',ink:'FF1F1F1F'};
+const xfill=c=>({type:'pattern',pattern:'solid',fgColor:{argb:c}});
+const xfont=(o={})=>Object.assign({name:'Calibri',size:10,color:{argb:XC.ink}},o);
+const xside=(c,s='thin')=>({style:s,color:{argb:c}});
+const xbox=c=>({top:xside(c),left:xside(c),bottom:xside(c),right:xside(c)});
+const colL=n=>{let s='';while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26)}return s};
+const xlines=(t,cap)=>String(t??'').split('\n').reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/Math.max(4,cap))),0);
+function XSheet(ws,widths){const W=widths.length;let row=1;ws.columns=widths.map(w=>({width:w}));
+ const span=(a,b)=>widths.slice(a-1,b).reduce((x,y)=>x+y,0);
+ const merge=(r,a,b)=>{if(b>a)ws.mergeCells(r,a,r,b)};
+ const each=(r,a,b,f)=>{for(let c=a;c<=b;c++)f(ws.getCell(r,c))};
+ const bar=(t,fill,font,h)=>{merge(row,1,W);const c=ws.getCell(row,1);c.value=t;c.font=font;c.fill=xfill(fill);c.alignment={vertical:'middle',indent:1};ws.getRow(row).height=h;row++};
+ return{get row(){return row},gap(n=1){row+=n},
+  title(t,sub){bar(t,XC.title,xfont({size:16,bold:true,color:{argb:XC.white}}),34);
+   if(sub){merge(row,1,W);const s=ws.getCell(row,1);s.value=sub;s.font=xfont({italic:true,color:{argb:XC.sub}});s.alignment={vertical:'middle',indent:1};ws.getRow(row).height=18;row++}row++},
+  band(t,fill){bar(String(t).toUpperCase(),fill||XC.band,xfont({size:11,bold:true,color:{argb:XC.white}}),22)},
+  subhead(t){merge(row,1,W);const c=ws.getCell(row,1);c.value=t;c.font=xfont({bold:true,color:{argb:XC.band}});c.alignment={vertical:'bottom',indent:1};
+   each(row,1,W,x=>x.border={bottom:xside(XC.band,'medium')});ws.getRow(row).height=20;row++},
+  kv(pairs){let kc=1;while(kc<W-1&&span(1,kc)<22)kc++;
+   pairs.forEach(([k,v])=>{merge(row,1,kc);merge(row,kc+1,W);const a=ws.getCell(row,1),b=ws.getCell(row,kc+1);
+    a.value=k;b.value=(v===''||v==null)?'—':v;each(row,1,W,x=>x.border=xbox(XC.line));
+    a.font=xfont({bold:true,color:{argb:'FF404040'}});a.fill=xfill(XC.key);a.alignment={vertical:'top',indent:1,wrapText:true};
+    b.font=xfont({bold:typeof v==='number'});b.alignment={vertical:'top',horizontal:'left',indent:1,wrapText:true};if(typeof v==='number')b.numFmt='#,##0.##';
+    ws.getRow(row).height=Math.max(18,xlines(b.value,span(kc+1,W)*1.1)*13+5);row++});row++},
+  paras(list,kind){const[f,ink,edge]=kind==='issue'?[XC.issFill,XC.issInk,XC.issEdge]:[XC.noteFill,XC.noteInk,XC.noteEdge];
+   list.forEach(t=>{merge(row,1,W);const c=ws.getCell(row,1);c.value=t;c.font=xfont({size:10,color:{argb:ink}});c.fill=xfill(f);
+    c.alignment={vertical:'middle',wrapText:true,indent:1};c.border={left:xside(edge,'thick'),bottom:xside(XC.white)};
+    ws.getRow(row).height=Math.max(20,xlines(t,span(1,W)*1.05)*13+8);row++});row++},
+  table(sec,c0=1,P){const cols=sec.cols,n=cols.length,idx={};cols.forEach((c,i)=>idx[c.k]=c0+i);const L=k=>colL(idx[k]);const h=row;
+   cols.forEach((c,i)=>{const x=ws.getCell(h,c0+i);x.value=c.h;x.font=xfont({bold:true,color:{argb:XC.white}});x.fill=xfill(XC.head);
+    x.alignment={vertical:'middle',horizontal:c.num?'center':'left',wrapText:true,indent:c.num?0:1};x.border=xbox(XC.headLine)});
+   ws.getRow(h).height=24;row++;const first=row;
+   if(!sec.rows.length){merge(row,c0,c0+n-1);const x=ws.getCell(row,c0);x.value='No entries recorded';x.font=xfont({italic:true,color:{argb:XC.sub}});x.alignment={horizontal:'center'};each(row,c0,c0+n-1,y=>y.border=xbox(XC.line));row+=2;return{h,first,last:first-1,L,n}}
+   sec.rows.forEach((o,j)=>{let hl=1;cols.forEach((c,i)=>{const x=ws.getCell(row,c0+i);let v=o[c.k];if(v==null)v='';
+     x.value=(c.f&&typeof v==='number')?{formula:c.f(row,L,P),result:v}:v;
+     x.font=xfont({bold:!!c.calc});x.border=xbox(XC.line);x.alignment={vertical:'middle',horizontal:c.num?'center':'left',wrapText:!c.num,indent:c.num?0:1};
+     if(c.calc)x.fill=xfill(XC.calc);else if(j%2)x.fill=xfill(XC.zebra);
+     if(typeof v==='number')x.numFmt=c.fmt||'#,##0';
+     if(c.num&&v==='—')x.font=xfont({color:{argb:XC.sub}});
+     const s=c.style&&c.style(v);if(s){x.fill=xfill(s[0]);x.font=xfont({bold:true,color:{argb:s[1]}});x.alignment={vertical:'middle',horizontal:'center'}}
+     if(!c.num&&typeof v==='string')hl=Math.max(hl,xlines(v,(widths[c0+i-1]||c.w)*1.05))});
+    ws.getRow(row).height=Math.max(18,hl*13+5);row++});
+   const last=row-1;
+   if(sec.total){const fs=cols.findIndex(c=>c.sum);if(fs>1)merge(row,c0,c0+fs-1);
+    cols.forEach((c,i)=>{const x=ws.getCell(row,c0+i);
+     if(i===0)x.value=sec.total;
+     else if(c.sum){const res=sec.rows.reduce((a,o)=>a+(typeof o[c.k]==='number'?o[c.k]:0),0);x.value={formula:`SUBTOTAL(109,${L(c.k)}${first}:${L(c.k)}${last})`,result:res};x.numFmt=c.fmt||'#,##0'}
+     x.font=xfont({bold:true,color:{argb:XC.band}});x.fill=xfill(XC.total);x.alignment={vertical:'middle',horizontal:c.sum?'center':'left',indent:c.sum?0:1};
+     x.border={top:xside(XC.band,'medium'),bottom:xside(XC.band,'medium'),left:xside(XC.line),right:xside(XC.line)}});
+    ws.getRow(row).height=20;row++}
+   row++;return{h,first,last,L,n}},
+  signoff(by){const m=Math.floor(W/2);merge(row,1,m);merge(row,m+1,W);
+   [[1,'Prepared by'],[m+1,'Reviewed by']].forEach(([c,t])=>{const x=ws.getCell(row,c);x.value=t;x.font=xfont({bold:true,color:{argb:XC.white}});x.fill=xfill(XC.head);x.alignment={indent:1,vertical:'middle'}});
+   ws.getRow(row).height=20;row++;
+   [['Name',by||'',''],['Signature','',''],['Date','','']].forEach(([l,a,b])=>{merge(row,1,m);merge(row,m+1,W);
+    ws.getCell(row,1).value=`${l}:  ${a}`;ws.getCell(row,m+1).value=`${l}:  ${b}`;each(row,1,W,x=>{x.border=xbox(XC.line);x.font=xfont({color:{argb:'FF404040'}});x.alignment={vertical:'middle',indent:1}});
+    ws.getRow(row).height=l==='Signature'?34:22;row++});row++}}}
+function secWidths(sec,min=5){const w=[];const put=(cols,at=1)=>cols.forEach((c,i)=>w[at-1+i]=Math.max(w[at-1+i]||0,c.w||12));
+ if(sec.cols)put(sec.cols);if(sec.sub)put(sec.sub.cols,sec.sub.at||2);
+ if(!sec.cols)return[30,20,20,20,20];
+ while(w.length<min)w.push(14);return w.map(x=>x||12)}
+function writeSec(S,sec){S.band(sec.title);if(sec.kv)S.kv(sec.kv);
+ if(sec.paras)S.paras(sec.paras.length?sec.paras:['No notes recorded']);
+ let info=null;if(sec.cols){info=S.table(sec);if(sec.sub&&sec.rows.length){S.subhead(sec.sub.title);S.table(sec.sub,sec.sub.at||2,info)}}return info}
+async function buildXL(m,lay){const wb=new ExcelJS.Workbook();wb.creator='FieldKit';wb.created=new Date();wb.calcProperties.fullCalcOnLoad=true;
+ const P=m.p,amp=s=>String(s||'').replace(/&/g,'&&'),T='CCTV SITE SURVEY   |   '+(P.name||'Untitled').toUpperCase();
+ const sub=[P.client,P.site,P.date&&('Survey date '+P.date)].filter(Boolean).join('   |   ')+(P.client||P.site||P.date?'   |   ':'')+'Exported '+new Date().toLocaleDateString(undefined,{dateStyle:'medium'});
+ const setup=(ws,label)=>{ws.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,margins:{left:.4,right:.4,top:.5,bottom:.6,header:.3,footer:.3}};
+  ws.headerFooter={oddFooter:`&L&8${amp(P.name)}&C&8Page &P of &N&R&8${amp(label)}`}};
+ const add=(name,tab)=>wb.addWorksheet(name.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31),{properties:{tabColor:{argb:tab||XC.band}},views:[{showGridLines:false}]});
+ if(lay==='one'){const w=[];m.sections.forEach(s=>{if(s.cols)secWidths(s).forEach((x,i)=>w[i]=Math.max(w[i]||0,Math.min(x,30)))});while(w.length<6)w.push(16);
+  const ws=add('Survey Report',XC.title),S=XSheet(ws,w);setup(ws,'Survey report');
+  S.title(T,sub);S.band('Project information');S.kv(m.info);S.band('Summary');S.kv(m.summary);
+  if(m.issues.length){S.band('Outstanding items',XC.issEdge);S.paras(m.issues,'issue')}
+  m.sections.forEach(s=>writeSec(S,s));S.band('Review and sign-off');S.signoff(P.surveyor)}
+ else{const ov=add('Overview',XC.title),S=XSheet(ov,[28,18,18,18,18,18]);setup(ov,'Overview');
+  S.title(T,sub);S.band('Project information');S.kv(m.info);S.band('Summary');S.kv(m.summary);
+  if(m.issues.length){S.band('Outstanding items',XC.issEdge);S.paras(m.issues,'issue')}
+  S.band('Sheets in this workbook');S.kv(m.sections.map(s=>[s.name,s.title]));S.band('Review and sign-off');S.signoff(P.surveyor);
+  m.sections.forEach(sec=>{const ws=add(sec.name,sec.tab),S2=XSheet(ws,secWidths(sec));setup(ws,sec.title);S2.title(T,sub);
+   const info=writeSec(S2,sec);
+   if(info&&info.last>=info.first){ws.views=[{state:'frozen',ySplit:info.h,showGridLines:false}];ws.autoFilter={from:{row:info.h,column:1},to:{row:info.last,column:info.n}};ws.pageSetup.printTitlesRow=`${info.h}:${info.h}`}})}
+ const buf=await wb.xlsx.writeBuffer();
+ download(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fname(P)+(lay==='one'?'_report':'_workbook')+'.xlsx')}
+
+/* ---- Fallbacks without styling ---- */
+function aoaSheets(m,lay){const secRows=s=>{const o=[[s.title.toUpperCase()]];(s.kv||[]).forEach(x=>o.push(x));
+  if(s.paras)(s.paras.length?s.paras:['No notes recorded']).forEach(t=>o.push([t]));
+  if(s.cols){o.push(s.cols.map(c=>c.h));s.rows.forEach(r=>o.push(s.cols.map(c=>r[c.k]??'')));
+   if(s.total)o.push(s.cols.map((c,i)=>i===0?s.total:c.sum?s.rows.reduce((a,r)=>a+(+r[c.k]||0),0):''));
+   if(s.sub&&s.rows.length){o.push([],[s.sub.title]);o.push(s.sub.cols.map(c=>c.h));s.sub.rows.forEach(r=>o.push(s.sub.cols.map(c=>r[c.k]??'')))}}
+  o.push([]);return o};
+ const head=[['CCTV SITE SURVEY | '+m.p.name],[],['PROJECT INFORMATION'],...m.info,[],['SUMMARY'],...m.summary,[],...(m.issues.length?[['OUTSTANDING ITEMS'],...m.issues.map(i=>[i]),[]]:[])];
+ return lay==='one'?[{name:'Survey Report',rows:[...head,...m.sections.flatMap(secRows)]}]:[{name:'Overview',rows:head},...m.sections.map(s=>({name:s.name,rows:secRows(s)}))]}
+function plainXLSX(m,lay){const wb=XLSX.utils.book_new();aoaSheets(m,lay).forEach(s=>{const ws=XLSX.utils.aoa_to_sheet(s.rows);const n=Math.max(...s.rows.map(r=>r.length));
+  ws['!cols']=Array.from({length:n},(_,c)=>({wch:Math.min(50,Math.max(10,...s.rows.filter(r=>r.length>1).map(r=>String(r[c]??'').length)))}));XLSX.utils.book_append_sheet(wb,ws,s.name.slice(0,31))});
+ XLSX.writeFile(wb,fname(m.p)+'.xlsx')}
+function xmlXLS(m,lay){const c=v=>typeof v==='number'?`<Cell><Data ss:Type="Number">${v}</Data></Cell>`:`<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`;
+ const ws=aoaSheets(m,lay).map(s=>`<Worksheet ss:Name="${esc(s.name.slice(0,31))}"><Table>${s.rows.map(r=>`<Row>${r.map(c).join('')}</Row>`).join('')}</Table></Worksheet>`).join('');
+ download(new Blob([`<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${ws}</Workbook>`],{type:'application/vnd.ms-excel'}),fname(m.p)+'.xls');toast('Exported .xls (offline mode)')}
+function exportJSON(p){try{download(new Blob([JSON.stringify(p,null,1)],{type:'application/json'}),fname(p)+'.fieldkit.json');toast('Backup downloaded')}catch(e){toast('Export failed: '+e.message,{err:1})}}
+function printReport(p){const m=reportModel(p);
+ const kv=a=>`<table>${a.map(([k,v])=>`<tr><td class="k">${esc(k)}</td><td>${esc(v===''||v==null?'—':(typeof v==='number'?fm(v):v)).replace(/\n/g,'<br>')}</td></tr>`).join('')}</table>`;
+ const tb=s=>`<table><thead><tr>${s.cols.map(c=>`<th>${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${s.rows.length?s.rows.map(r=>`<tr>${s.cols.map(c=>`<td>${esc(typeof r[c.k]==='number'?fm(r[c.k]):r[c.k])}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${s.cols.length}">No entries recorded</td></tr>`}
+  ${s.total&&s.rows.length?`<tr class="tot">${s.cols.map((c,i)=>`<td>${i===0?s.total:c.sum?fm(s.rows.reduce((a,r)=>a+(+r[c.k]||0),0)):''}</td>`).join('')}</tr>`:''}</tbody></table>`;
+ $('#report').innerHTML=`<p class="ttl">CCTV Site Survey | ${esc(p.name)}</p><h2>Project information</h2>${kv(m.info)}<h2>Summary</h2>${kv(m.summary)}
+  ${m.issues.length?`<h2>Outstanding items</h2>${m.issues.map(i=>`<div class="note">${esc(i)}</div>`).join('')}`:''}
+  ${m.sections.map(s=>`<h2>${esc(s.title)}</h2>${s.kv?kv(s.kv):''}${s.paras?(s.paras.length?s.paras:['No notes recorded']).map(t=>`<div class="note">${esc(t)}</div>`).join(''):''}${s.cols?tb(s)+(s.sub&&s.rows.length?`<b>${esc(s.sub.title)}</b>${tb(s.sub)}`:''):''}`).join('')}
+  <h2>Review and sign-off</h2><table><tr><td>Prepared by: ${esc(p.surveyor)}<br><br>Signature / Date:</td><td>Reviewed by:<br><br>Signature / Date:</td></tr></table>`;
+ window.print()}
 </script>
 <script>
-/* Module: CCTV & ELV Site Survey. Data lives in project.data.cctv. */
+/* Module: CCTV & ELV Site Survey. Data lives in project.data.cctv (schema v2). */
 (function(){
 const T=['dome','bullet','ptz','kpoi','anpr'],TL={dome:'Dome',bullet:'Bullet',ptz:'PTZ',kpoi:'KPOI',anpr:'ANPR'};
 const ST=['New Install','Existing','Relocate','By Others','To Be Confirmed'];
-const D=p=>{const d=p.data.cctv||(p.data.cctv={});d.mdfLocation??='';d.compliance??='';d.notes??='';d.cams??=[];d.equip??=[];d.cables??=[];return d};
+const MT={pole:'Pole',polewall:'Pole (wall mount)',wall:'Wall',pendant:'Pendant',ceiling:'Ceiling',other:'Other'};
+const CT={cat6:'Cat6',cat5:'Cat5',cat6a:'Cat6A',travel:'Travelling cable',fibre:'Fibre cable',power:'Power cable',other:'Other'};
+const CAT=new Set(['cat6','cat5','cat6a']);
 const rt=r=>T.reduce((a,k)=>a+num(r[k]),0);
-const COLS={
- cams:[{k:'mdf',l:'MDF / IDF'},{k:'floor',l:'Floor'},...T.map(k=>({k,l:TL[k],t:'num'})),{k:'rt',l:'Total',t:'calc'},{k:'pole',l:'Pole / Mounting'}],
- equip:[{k:'desc',l:'Equipment Description'},{k:'spec',l:'Specification / Model'},{k:'qty',l:'Qty',t:'num'},{k:'rack',l:'Rack (U)'},{k:'conn',l:'Connector / Interface'},{k:'status',l:'Status',t:'sel',o:ST}],
- cables:[{k:'tag',l:'Cable Tag ID'},{k:'from',l:'From'},{k:'to',l:'To'},{k:'type',l:'Cable / Conduit Type'},{k:'len',l:'Est. Length (m)',t:'num'},{k:'path',l:'Pathway / Route'}]};
-const BLANK={cams:()=>({mdf:'MDF',floor:'',dome:0,bullet:0,ptz:0,kpoi:0,anpr:0,pole:''}),equip:()=>({desc:'',spec:'',qty:1,rack:'',conn:'',status:'New Install'}),cables:()=>({tag:'',from:'',to:'',type:'',len:0,path:''})};
-const TITLE={cams:'Camera quantities by floor',equip:'Equipment rack & control room',cables:'Cabling & routes'},ADD={cams:'Add floor',equip:'Add equipment',cables:'Add cable route'};
+const camTotal=d=>d.cams.reduce((a,r)=>a+rt(r),0);
+const mname=r=>r.type==='other'?(String(r.custom||'').trim()||'Other'):MT[r.type]||'Other';
+const cname=r=>r.name==='other'?(String(r.custom||'').trim()||'Other'):CT[r.name]||'Other';
+const runsOf=(d,r)=>r.auto?camTotal(d):num(r.runs);
+const ctot=(d,r)=>r.mode==='avg'?Math.round(num(r.len)*runsOf(d,r)*100)/100:num(r.len);
+const locName=(d,v)=>{if(!v||v==='MDF')return v||'';const x=d.idfs.find(o=>o.id===v);return x?(String(x.name).trim()||x.kind+' (unnamed)'):(String(v).startsWith('loc_')?'(removed location)':v)};
+const locLabel=x=>{const n=String(x.name).trim();return!n?x.kind+' (unnamed)':n.toUpperCase().startsWith(x.kind)?n:`${n} (${x.kind})`};
 
-function issuesBy(p){const d=D(p),o={cams:[],equip:[],cables:[]};
+/* data + migration from the earlier format */
+function guessCable(r){const s=String(r.type||'').toLowerCase();let name='other';
+ if(/cat\s*-?6\s*a/.test(s))name='cat6a';else if(/cat\s*-?6/.test(s))name='cat6';else if(/cat\s*-?5/.test(s))name='cat5';
+ else if(/fib|fiber|fibre|os[12]\b|om[1-5]\b/.test(s))name='fibre';else if(/power/.test(s))name='power';else if(/travel/.test(s))name='travel';
+ const f=String(r.from||'').trim(),t=String(r.to||'').trim();
+ const note=[r.tag,f||t?`${f||'?'} to ${t||'?'}`:'',name==='other'?'':r.type,r.path].map(x=>String(x||'').trim()).filter(Boolean).join('. ');
+ return{name,custom:name==='other'?String(r.type||r.tag||'').trim():'',mode:'total',len:num(r.len),runs:0,auto:false,note}}
+const D=p=>{const d=p.data.cctv||(p.data.cctv={v:2});d.mdfLocation??='';d.notes??='';['cams','mounts','equip','cables','idfs'].forEach(k=>d[k]??=[]);
+ if((d.v||1)<2){d.cams.forEach(r=>{if(String(r.pole||'').trim())d.mounts.push({type:'other',custom:'From old camera list',qty:0,loc:r.floor||'',note:r.pole});delete r.pole});
+  d.cables=d.cables.map(r=>r.name?r:guessCable(r));d.equip.forEach(r=>delete r.conn);delete d.compliance;d.v=2}
+ d.idfs.forEach(x=>x.id??='loc_'+uid());return d};
+
+/* section copy */
+const TITLE={cams:'Camera quantities by floor',mounts:'Camera mounting',equip:'Equipment rack & control room',cables:'Cabling',idfs:'IDF / ENC locations'};
+const ADD={cams:'Add floor',mounts:'Add mounting',equip:'Add equipment',cables:'Add cable',idfs:'Add IDF / ENC'};
+const EMPTY={cams:'No camera entries yet. Add your first floor.',mounts:'No mounting recorded yet. Add how the cameras are fixed: pole, wall, ceiling and so on.',equip:'No equipment added.',cables:'No cables added yet.',idfs:'No IDF or ENC locations yet. Add one for every intermediate frame or enclosure on site.'};
+const INTRO={mounts:'One mount can carry more than one camera, so the mount count does not have to match the camera count.',
+ cables:'Average length is multiplied by the number of runs. Total length is used exactly as entered.',
+ idfs:'Locations added here appear in the MDF / IDF list on the Cameras tab.'};
+const BLANK={cams:()=>({mdf:'MDF',floor:'',dome:0,bullet:0,ptz:0,kpoi:0,anpr:0}),mounts:()=>({type:'wall',custom:'',qty:1,loc:'',note:''}),
+ equip:()=>({desc:'',spec:'',qty:1,rack:'',status:'New Install'}),cables:()=>({name:'cat6',custom:'',mode:'avg',len:0,runs:0,auto:true,note:''}),
+ idfs:d=>({id:'loc_'+uid(),kind:'IDF',name:nextName(d,'IDF'),loc:'',note:''})};
+const nextName=(d,kind,skip)=>{let n=0;d.idfs.forEach(x=>{if(x===skip)return;const m=/^(IDF|ENC)-(\d+)$/i.exec(String(x.name).trim());if(m&&m[1].toUpperCase()===kind)n=Math.max(n,+m[2])});return kind+'-'+String(n+1).padStart(2,'0')};
+
+/* issues + progress + summary */
+function issuesBy(p){const d=D(p),o={cams:[],mounts:[],equip:[],cables:[],general:[]};
  if(!d.cams.length)o.cams.push('No camera entries yet');
- d.cams.forEach((r,i)=>{if(!String(r.floor).trim())o.cams.push(`Camera row ${i+1}: floor missing`);else if(!rt(r))o.cams.push(`Floor ${r.floor}: no cameras entered`)});
+ d.cams.forEach((r,i)=>{if(!String(r.floor).trim())o.cams.push(`Camera row ${i+1}: floor missing`);else if(!rt(r))o.cams.push(`Floor ${r.floor}: no cameras entered`);
+  if(locName(d,r.mdf)==='(removed location)')o.cams.push(`Camera row ${i+1}: its IDF / ENC location was removed`)});
+ if(!d.mounts.length)o.mounts.push('No mounting entries yet');
+ d.mounts.forEach((r,i)=>{if(r.type==='other'&&!String(r.custom).trim())o.mounts.push(`Mounting row ${i+1}: name the "Other" type`);if(num(r.qty)<1)o.mounts.push(`Mounting row ${i+1} (${mname(r)}): quantity missing`)});
  if(!d.equip.length)o.equip.push('No equipment added');
  d.equip.forEach((r,i)=>{if(!String(r.desc).trim())o.equip.push(`Equipment row ${i+1}: description missing`);if(num(r.qty)<1)o.equip.push(`Equipment row ${i+1}: quantity must be 1 or more`)});
- if(!d.cables.length)o.cables.push('No cable routes added');
- const seen={};d.cables.forEach((r,i)=>{const t=String(r.tag).trim().toUpperCase();if(!t)o.cables.push(`Cable row ${i+1}: tag missing`);else if(seen[t])o.cables.push(`Duplicate cable tag ${r.tag}`);seen[t]=1;
-  if(!String(r.from).trim()||!String(r.to).trim())o.cables.push(`Cable ${r.tag||i+1}: route From/To missing`);if(!num(r.len))o.cables.push(`Cable ${r.tag||i+1}: length missing`)});
+ if(!d.cables.length)o.cables.push('No cables added');
+ d.cables.forEach((r,i)=>{const n=`Cable row ${i+1} (${cname(r)})`;if(r.name==='other'&&!String(r.custom).trim())o.cables.push(`Cable row ${i+1}: name the "Other" cable`);
+  if(!num(r.len))o.cables.push(`${n}: length missing`);if(r.mode==='avg'&&!runsOf(d,r))o.cables.push(`${n}: number of runs missing`)});
+ if(!d.mdfLocation.trim())o.general.push('Primary MDF location missing');
+ const seen={};d.idfs.forEach((r,i)=>{const k=String(r.name).trim().toUpperCase();if(!k)o.general.push(`IDF / ENC row ${i+1}: name missing`);else if(seen[k])o.general.push(`Duplicate location name ${r.name}`);seen[k]=1});
  return o}
 const issues=p=>Object.values(issuesBy(p)).flat();
-function progress(p){const d=D(p),b=issuesBy(p);const c=[d.cams.length&&!b.cams.length,d.equip.length&&!b.equip.length,d.cables.length&&!b.cables.length,d.mdfLocation.trim(),d.notes.trim()];return Math.round(100*c.filter(Boolean).length/c.length)}
+function progress(p){const d=D(p),b=issuesBy(p);const c=[d.cams.length&&!b.cams.length,d.mounts.length&&!b.mounts.length,d.equip.length&&!b.equip.length,d.cables.length&&!b.cables.length,!b.general.length,d.notes.trim()];
+ return Math.round(100*c.filter(Boolean).length/c.length)}
 function summary(p){const d=D(p),s=k=>d.cams.reduce((a,r)=>a+num(r[k]),0);
- return[['Total cameras',d.cams.reduce((a,r)=>a+rt(r),0)],...T.map(k=>[TL[k]+' cameras',s(k)]),['Floors / levels',new Set(d.cams.map(r=>String(r.floor).trim()).filter(Boolean)).size],
- ['MDF / IDF locations',new Set(d.cams.map(r=>String(r.mdf).trim()).filter(Boolean)).size],['Equipment line items',d.equip.length],['Total equipment qty',d.equip.reduce((a,r)=>a+num(r.qty),0)],
- ['Cable routes',d.cables.length],['Estimated cable length (m)',d.cables.reduce((a,r)=>a+num(r.len),0)],['Outstanding items',issues(p).length]]}
-function sheets(p){const d=D(p);return[
- {name:'Camera Schedule',rows:[['S.No','MDF / IDF','Floor','Dome','Bullet','PTZ','KPOI','ANPR','Total','Pole / Mounting'],...d.cams.map((r,i)=>[i+1,r.mdf,r.floor,...T.map(k=>num(r[k])),rt(r),r.pole]),['','','TOTAL',...T.map(k=>d.cams.reduce((a,r)=>a+num(r[k]),0)),d.cams.reduce((a,r)=>a+rt(r),0),'']]},
- {name:'Equipment Schedule',rows:[['Item','Description','Specification / Model','Qty','Rack (U)','Connector / Interface','Status'],...d.equip.map((r,i)=>[String(i+1).padStart(2,'0'),r.desc,r.spec,num(r.qty),r.rack,r.conn,r.status])]},
- {name:'Cable Schedule',rows:[['Tag','From','To','Cable / Conduit Type','Est. Length (m)','Pathway / Route'],...d.cables.map(r=>[r.tag,r.from,r.to,r.type,num(r.len),r.path]),['','','','TOTAL',d.cables.reduce((a,r)=>a+num(r.len),0),'']]},
- {name:'Site Notes',rows:[['Item','Detail'],['Primary MDF location',d.mdfLocation],['Compliance status',d.compliance],...d.notes.split('\n').filter(x=>x.trim()).map(x=>['Note',x.replace(/^[•\-\s]+/,'')])]}]}
+ return[['Total cameras',camTotal(d)],...T.map(k=>[TL[k]+' cameras',s(k)]),['Floors / levels',new Set(d.cams.map(r=>String(r.floor).trim()).filter(Boolean)).size],
+  ['Mounting points',d.mounts.reduce((a,r)=>a+num(r.qty),0)],['IDF / ENC locations',d.idfs.length],['Equipment line items',d.equip.length],['Total equipment qty',d.equip.reduce((a,r)=>a+num(r.qty),0)],
+  ['Cable lines',d.cables.length],['Total cable length (m)',Math.round(d.cables.reduce((a,r)=>a+ctot(d,r),0)*100)/100],['Outstanding items',issues(p).length]]}
 
-function render(el,p,ctx){const d=D(p);let tab='general';const q={cams:'',equip:'',cables:''};const TABS=[['general','General'],['cams','Cameras'],['equip','Equipment'],['cables','Cables'],['notes','Notes']];
- const inp=(c,r,i,n)=>{const v=esc(r[c.k]),a=`data-k="${c.k}" aria-label="${esc(c.l)} row ${n}"`;
-  if(c.t==='num')return`<input type="number" inputmode="decimal" min="0" value="${v}" ${a}>`;
-  if(c.t==='sel')return`<select ${a}>${(c.o.includes(r[c.k])?c.o:[r[c.k],...c.o]).map(o=>`<option${o===r[c.k]?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
-  return`<input type="text" value="${v}" ${a}>`};
- const grid=kind=>{const rows=d[kind],cols=COLS[kind],f=q[kind].toLowerCase();const idx=rows.map((_,i)=>i).filter(i=>!f||JSON.stringify(rows[i]).toLowerCase().includes(f));
-  let h=`<div class="row"><h2 class="sp">${TITLE[kind]}</h2><button class="pri" data-act="add">＋ ${ADD[kind]}</button></div>`;
-  if(!rows.length)return h+`<div class="card empty"><p>${kind==='cams'?'No camera entries yet. Add your first floor.':kind==='equip'?'No equipment added.':'No cable routes added.'}</p><button class="pri" data-act="add">＋ ${ADD[kind]}</button></div>`;
-  if(rows.length>5)h+=`<input type="search" data-q placeholder="Search…" aria-label="Search ${TITLE[kind]}" value="${esc(q[kind])}" style="margin-bottom:10px">`;
-  h+=`<div class="tw" data-kind="${kind}"><table><thead><tr><th>#</th>${cols.map(c=>`<th>${c.l}</th>`).join('')}<th></th></tr></thead><tbody>`;
-  idx.forEach(i=>{const r=rows[i];h+=`<tr data-i="${i}"><td data-label="#">${i+1}</td>${cols.map(c=>`<td data-label="${c.l}" class="${c.t==='num'?'n':''}">${c.t==='calc'?`<b data-rt>${rt(r)}</b>`:inp(c,r,i,i+1)}</td>`).join('')}<td><button class="dng" data-act="del" aria-label="Delete row ${i+1}">🗑 <span style="font-size:13px">Delete</span></button></td></tr>`});
-  if(!idx.length)h+=`<tr data-none><td>No matches</td></tr>`;h+='</tbody>';
-  if(kind==='cams')h+=`<tfoot><tr><td>TOTAL</td>${T.map(k=>`<td data-label="${TL[k]}" data-t="${k}"></td>`).join('')}<td data-label="All" data-t="all"></td></tr></tfoot>`;
-  if(kind==='equip')h+=`<tfoot><tr><td data-label="Total qty" data-t="qty"></td></tr></tfoot>`;
-  if(kind==='cables')h+=`<tfoot><tr><td data-label="Total length (m)" data-t="len"></td></tr></tfoot>`;
-  return h+'</table></div>'};
- const body={
-  general:()=>`<div class="card form"><div><label for="g1">Primary MDF location</label><input id="g1" data-g="mdfLocation" value="${esc(d.mdfLocation)}"></div><div><label for="g2">MOI compliance status</label><input id="g2" data-g="compliance" value="${esc(d.compliance)}"></div></div>
-   <h2>Section status</h2><div class="card"><ul class="issues">${issues(p).map(i=>`<li>${esc(i)}</li>`).join('')||'<li style="color:var(--ok)">No outstanding items</li>'}</ul></div>`,
-  cams:()=>grid('cams'),equip:()=>grid('equip'),cables:()=>grid('cables'),
-  notes:()=>`<h2>Site observations & technical notes</h2><label for="nt" class="sr">Notes</label><textarea id="nt" data-g="notes" style="min-height:260px">${esc(d.notes)}</textarea>`};
- const totals=()=>{const g=(n,v)=>el.querySelectorAll(`[data-t="${n}"]`).forEach(e=>e.textContent=v);
-  T.forEach(k=>g(k,d.cams.reduce((a,r)=>a+num(r[k]),0)));g('all',d.cams.reduce((a,r)=>a+rt(r),0));g('qty',d.equip.reduce((a,r)=>a+num(r.qty),0));g('len',d.cables.reduce((a,r)=>a+num(r.len),0))};
- const draw=()=>{el.innerHTML=`<div class="tabs" role="tablist">${TABS.map(([k,l])=>`<button role="tab" aria-selected="${k===tab}" class="${k===tab?'on':''}" data-tab="${k}">${l}</button>`).join('')}</div><div id="cb">${body[tab]()}</div>`;totals()};
- const kind=()=>tab;
- el.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.tab){tab=b.dataset.tab;draw();return}
-  const k=kind();if(b.dataset.act==='add'){d[k].push(BLANK[k]());ctx.save();q[k]='';draw();const l=el.querySelectorAll('tr[data-i]');l[l.length-1]?.querySelector('input')?.focus()}
-  if(b.dataset.act==='del'){const i=+b.closest('tr').dataset.i,row=d[k][i];d[k].splice(i,1);ctx.save();draw();toast('Row deleted',{label:'Undo',fn:()=>{d[k].splice(i,0,row);ctx.save();draw()}})}};
- el.oninput=e=>{const t=e.target;if(t.dataset.q!==undefined){q[kind()]=t.value;const pos=t.selectionStart;draw();const s=el.querySelector('[data-q]');s.focus();s.setSelectionRange(pos,pos);return}
-  if(t.dataset.g){d[t.dataset.g]=t.value;ctx.save();return}
-  const tr=t.closest('tr[data-i]');if(!tr)return;const k=kind(),r=d[k][+tr.dataset.i],c=t.dataset.k;r[c]=t.type==='number'?(t.value===''?0:Math.max(0,+t.value)):t.value;
-  tr.querySelector('[data-rt]')&&(tr.querySelector('[data-rt]').textContent=rt(r));totals();ctx.save()};
+/* Excel / print report sections */
+function report(p){const d=D(p);
+ const sumBy=(rows,key,val)=>{const m=new Map();rows.forEach(r=>{const k=key(r);m.set(k,(m.get(k)||0)+val(r))});return[...m]};
+ const sif=(kk,vk)=>(r,L,P)=>`SUMIF($${P.L(kk)}$${P.first}:$${P.L(kk)}$${P.last},${L(kk)}${r},$${P.L(vk)}$${P.first}:$${P.L(vk)}$${P.last})`;
+ const lenFmt=v=>v.every(Number.isInteger)?'#,##0':'#,##0.0#';
+ const STY={'New Install':['FFE2EFDA','FF375623'],'Existing':['FFEDEDED','FF404040'],'Relocate':['FFDDEBF7','FF1F4E78'],'By Others':['FFEDE7F6','FF5B2C83'],'To Be Confirmed':['FFFFF2CC','FF7F6000']};
+ const cr=d.cables.map((r,i)=>({no:i+1,cable:cname(r),mode:r.mode==='avg'?'Average':'Total',len:num(r.len),runs:r.mode==='avg'?runsOf(d,r):'—',tot:ctot(d,r),note:r.note}));
+ const lf=lenFmt([...cr.map(r=>r.len),...cr.map(r=>r.tot)]);
+ const mr=d.mounts.map((r,i)=>({no:i+1,type:mname(r),qty:num(r.qty),loc:r.loc,note:r.note}));
+ return[
+ {id:'general',name:'General',title:'MDF, IDF and ENC locations',tab:'FF2E75B6',kv:[['Primary MDF location',d.mdfLocation]],
+  cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'kind',h:'Type',w:10},{k:'name',h:'Name / tag',w:18},{k:'loc',h:'Location',w:30},{k:'note',h:'Note',w:46}],
+  rows:d.idfs.map((r,i)=>({no:i+1,kind:r.kind,name:r.name,loc:r.loc,note:r.note}))},
+ {id:'cams',name:'Cameras',title:'Camera schedule by floor',tab:'FF2F5597',total:'TOTAL',
+  cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'mdf',h:'MDF / IDF',w:16},{k:'floor',h:'Floor',w:14},...T.map(k=>({k,h:TL[k],w:9,num:1,sum:1})),{k:'rt',h:'Total',w:10,num:1,sum:1,calc:1,f:(r,L)=>`SUM(${L('dome')}${r}:${L('anpr')}${r})`}],
+  rows:d.cams.map((r,i)=>Object.assign({no:i+1,mdf:locName(d,r.mdf),floor:r.floor,rt:rt(r)},...T.map(k=>({[k]:num(r[k])}))))},
+ {id:'mounts',name:'Mounting',title:'Camera mounting schedule',tab:'FF548235',total:'TOTAL',
+  cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'type',h:'Mounting type',w:22},{k:'qty',h:'Qty',w:10,num:1,sum:1},{k:'loc',h:'Location / floor',w:20},{k:'note',h:'Note',w:46}],rows:mr,
+  sub:{title:'Mounting points by type',at:2,total:'TOTAL',cols:[{k:'type',h:'Mounting type',w:22},{k:'qty',h:'Qty',w:10,num:1,sum:1,f:sif('type','qty')}],rows:sumBy(mr,r=>r.type,r=>r.qty).map(([type,qty])=>({type,qty}))}},
+ {id:'equip',name:'Equipment',title:'Equipment schedule: rack and control room',tab:'FF7030A0',total:'TOTAL',
+  cols:[{k:'no',h:'Item',w:7,num:1},{k:'desc',h:'Description',w:36},{k:'spec',h:'Specification / model',w:36},{k:'qty',h:'Qty',w:8,num:1,sum:1},{k:'rack',h:'Rack (U)',w:12},{k:'status',h:'Status',w:18,style:v=>STY[v]}],
+  rows:d.equip.map((r,i)=>({no:i+1,desc:r.desc,spec:r.spec,qty:num(r.qty),rack:r.rack,status:r.status}))},
+ {id:'cables',name:'Cables',title:'Cable schedule',tab:'FFC55A11',total:'TOTAL',
+  cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'cable',h:'Cable',w:20},{k:'mode',h:'Length type',w:13},{k:'len',h:'Length (m)',w:12,num:1,fmt:lf},{k:'runs',h:'Runs',w:9,num:1},
+   {k:'tot',h:'Total length (m)',w:15,num:1,sum:1,calc:1,fmt:lf,f:(r,L)=>`IF(${L('mode')}${r}="Average",${L('len')}${r}*${L('runs')}${r},${L('len')}${r})`},{k:'note',h:'Note',w:46}],rows:cr,
+  sub:{title:'Total length by cable type',at:2,total:'TOTAL',cols:[{k:'cable',h:'Cable type',w:20},{k:'tot',h:'Total length (m)',w:15,num:1,sum:1,fmt:lf,f:sif('cable','tot')}],rows:sumBy(cr,r=>r.cable,r=>r.tot).map(([cable,tot])=>({cable,tot:Math.round(tot*100)/100}))}},
+ {id:'notes',name:'Notes',title:'Site observations and technical notes',tab:'FFBF9000',paras:d.notes.split('\n').map(x=>x.replace(/^[•\-\*\s]+/,'').trim()).filter(Boolean)}]}
+
+/* ---------- UI ---------- */
+const lastTab={};
+function render(el,p,ctx){const d=D(p);let tab=lastTab[p.id]||'general';const q={cams:'',mounts:'',equip:'',cables:'',idfs:''};
+ const TABS=[['general','General'],['cams','Cameras'],['mounts','Mounting'],['equip','Equipment'],['cables','Cables'],['notes','Notes']];
+ const kind=()=>tab==='general'?'idfs':tab,ik=k=>k==='idfs'?'general':k;
+ const A=(k,l,i)=>`data-k="${k}" aria-label="${esc(l)}, row ${i+1}"`;
+ const opts=(list,v)=>list.map(([val,lab])=>`<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`).join('');
+ const txt=(k,l,ph='',list='',cls='')=>({k,l,cls,cell:(r,i)=>`<input type="text" value="${esc(r[k])}" placeholder="${esc(ph)}" ${list?`list="${list}"`:''} ${A(k,l,i)}>`});
+ const nm=(k,l)=>({k,l,cls:'n',cell:(r,i)=>`<input type="number" inputmode="numeric" min="0" step="1" value="${num(r[k])||''}" placeholder="0" ${A(k,l,i)}>`});
+ const pick=(k,l,MAP,ph)=>({k,l,cls:'sl',cell:(r,i)=>r[k]==='other'
+  ?`<div class="combo"><input type="text" data-k="custom" value="${esc(r.custom)}" placeholder="${ph}" aria-label="Custom ${esc(l.toLowerCase())}, row ${i+1}"><select ${A(k,'Change '+l.toLowerCase(),i)}>${opts(Object.entries(MAP),r[k])}</select><svg class="i chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>`
+  :`<select ${A(k,l,i)}>${opts(Object.entries(MAP),r[k])}</select>`});
+ const COLS={
+  cams:[{k:'mdf',l:'MDF / IDF',cls:'sl',cell:(r,i)=>{let L=[['MDF','MDF'],...d.idfs.map(x=>[x.id,locLabel(x)])];if(r.mdf&&!L.some(o=>o[0]===r.mdf))L=[[r.mdf,locName(d,r.mdf)],...L];return`<select ${A('mdf','MDF / IDF',i)}>${opts(L,r.mdf)}</select>`}},
+   txt('floor','Floor','e.g. GF'),...T.map(k=>nm(k,TL[k])),{k:'rt',l:'Total',cls:'n',cell:r=>`<output class="calc" data-c="rt">${rt(r)}</output>`}],
+  mounts:[pick('type','Mounting type',MT,'Name this mounting'),nm('qty','Qty'),txt('loc','Location / floor','e.g. GF, car park','fk-floors'),txt('note','Note','Bracket, height, remarks','','nt')],
+  equip:[txt('desc','Equipment description'),txt('spec','Specification / model','','','nt'),nm('qty','Qty'),txt('rack','Rack (U)','e.g. 2U'),{k:'status',l:'Status',cell:(r,i)=>{let L=ST.includes(r.status)?ST:[r.status,...ST];return`<select ${A('status','Status',i)}>${opts(L.map(x=>[x,x]),r.status)}</select>`}}],
+  cables:[pick('name','Cable',CT,'Cable name'),
+   {k:'mode',l:'Length type',cell:(r,i)=>`<div class="seg" data-v="${r.mode==='avg'?'avg':'total'}" role="group" aria-label="Length type, row ${i+1}"><button type="button" data-act="mode" data-v="avg" aria-pressed="${r.mode==='avg'}">Average</button><button type="button" data-act="mode" data-v="total" aria-pressed="${r.mode!=='avg'}">Total</button></div>`},
+   {k:'len',l:'Length (m)',lab:r=>r.mode==='avg'?'Avg length / run (m)':'Total length (m)',cls:'n',cell:(r,i)=>`<input type="number" inputmode="decimal" min="0" step="any" value="${num(r.len)||''}" placeholder="${r.mode==='avg'?'avg / run':'total'}" ${A('len','Length in metres',i)}>`},
+   {k:'runs',l:'Runs (×)',cls:'rn',lab:r=>r.mode==='avg'?'Runs (×)':'Runs',cell:(r,i)=>r.mode!=='avg'?`<div class="rw"><input type="text" disabled value="—" aria-label="Runs not used for total length, row ${i+1}"></div>`
+    :`<div class="rw"><input type="number" inputmode="numeric" min="0" step="1" value="${runsOf(d,r)||''}" placeholder="0" ${A('runs','Number of runs',i)}><span class="in" data-c="hint">${hint(r)}</span></div>`},
+   {k:'tot',l:'Total (m)',cell:r=>`<output class="calc" data-c="tot">${totHtml(r)}</output>`},
+   txt('note','Note','Route, containment, remarks','','nt')],
+  idfs:[{k:'kind',l:'Type',cell:(r,i)=>`<select ${A('kind','Type',i)}>${opts([['IDF','IDF'],['ENC','ENC']],r.kind)}</select>`},txt('name','Name / tag','e.g. IDF-01'),txt('loc','Location','e.g. 1st floor riser'),txt('note','Note','','','nt')]};
+ function hint(r){const ct=camTotal(d);
+  if(r.auto)return ct?`<span class="chip lk" title="Linked to the camera total (${ct}). Type a number to override.">${I.link} Cams</span>`:`<span class="chip wn" title="Runs follow the camera total, which is 0 now">0 cams</span>`;
+  return ct&&num(r.runs)!==ct?`<button type="button" class="chip" data-act="relink" aria-label="Use camera total ${ct}" title="Use the camera total (${ct}) and keep it linked">${I.link} ${ct}</button>`:''}
+ function totHtml(r){return r.mode==='avg'?`${fm(ctot(d,r))} m<small>${fm(num(r.len))} m × ${fm(runsOf(d,r))}</small>`:`${fm(num(r.len))} m<small>as entered</small>`}
+ const FOOT={
+  cams:()=>`<tr><td colspan="3" class="fl">Total</td>${T.map(k=>`<td class="n" data-label="${TL[k]}">${d.cams.reduce((a,r)=>a+num(r[k]),0)}</td>`).join('')}<td class="n" data-label="All cameras">${camTotal(d)}</td><td></td></tr>`,
+  mounts:()=>{const t=d.mounts.reduce((a,r)=>a+num(r.qty),0),ct=camTotal(d),by={};d.mounts.forEach(r=>by[mname(r)]=(by[mname(r)]||0)+num(r.qty));
+   return`<tr><td colspan="${COLS.mounts.length+2}"><div class="sums"><span>Mounting points <b>${t}</b></span>${Object.entries(by).map(([k,v])=>`<span class="chip">${esc(k)} <b>${v}</b></span>`).join('')}<span class="sp"></span>${ct&&t!==ct?`<span class="chip wn" title="Fine when one mount carries several cameras">Cameras: ${ct}</span>`:ct?`<span class="chip lk">Matches ${ct} cameras</span>`:''}</div></td></tr>`},
+  equip:()=>`<tr><td colspan="${COLS.equip.length+2}"><div class="sums"><span>Total quantity <b>${d.equip.reduce((a,r)=>a+num(r.qty),0)}</b></span></div></td></tr>`,
+  cables:()=>{const by={};d.cables.forEach(r=>by[cname(r)]=(by[cname(r)]||0)+ctot(d,r));
+   return`<tr><td colspan="${COLS.cables.length+2}"><div class="sums"><span>Total cable <b>${fm(d.cables.reduce((a,r)=>a+ctot(d,r),0))} m</b></span>${Object.entries(by).map(([k,v])=>`<span class="chip">${esc(k)} <b>${fm(v)} m</b></span>`).join('')}</div></td></tr>`}};
+ const rowHtml=(k,i)=>{const r=d[k][i],f=!!q[k];
+  return`<tr data-i="${i}"><td class="h"><button type="button" class="hd" data-drag ${f?'disabled':''} aria-label="Move row ${i+1}. Drag, or press the up and down arrow keys" title="${f?'Clear the search to reorder':'Drag to reorder'}">${I.grip}</button><span class="ix">${i+1}</span></td>${COLS[k].map(c=>`<td data-label="${esc(c.lab?c.lab(r):c.l)}" class="${c.cls||''}">${c.cell(r,i)}</td>`).join('')}<td class="x"><button type="button" class="ib dng" data-act="del" aria-label="Delete row ${i+1}" title="Delete row">${I.trash}</button></td></tr>`};
+ const issHtml=key=>{const l=issuesBy(p)[key];return l.length?`<details class="iss"><summary>${l.length} item${l.length>1?'s':''} to check</summary><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`:''};
+ const grid=k=>{const rows=d[k],f=q[k].toLowerCase(),idx=rows.map((_,i)=>i).filter(i=>!f||JSON.stringify(rows[i]).toLowerCase().includes(f));
+  let h=`<div class="sh"><h2>${TITLE[k]}</h2><button class="pri addTop" data-act="add">${I.plus} ${ADD[k]}</button></div>`;
+  if(INTRO[k])h+=`<p class="intro">${INTRO[k]}</p>`;
+  h+=`<div data-iss="${ik(k)}">${issHtml(ik(k))}</div>`;
+  if(!rows.length)return h+`<div class="card empty"><p>${EMPTY[k]}</p><button class="pri" data-act="add">${I.plus} ${ADD[k]}</button></div>`;
+  if(rows.length>5)h+=`<input type="search" data-q placeholder="Search ${TITLE[k].toLowerCase()}…" aria-label="Search ${TITLE[k]}" value="${esc(q[k])}" style="margin-bottom:10px">`;
+  h+=`<div class="tw"><table class="t-${k}"><thead><tr><th><span class="sr">Order</span>#</th>${COLS[k].map(c=>`<th class="${c.cls||''}">${c.l}</th>`).join('')}<th><span class="sr">Delete</span></th></tr></thead>
+   <tbody>${idx.map(i=>rowHtml(k,i)).join('')||`<tr data-none><td colspan="${COLS[k].length+2}">No matches for “${esc(q[k])}”</td></tr>`}</tbody>${FOOT[k]?`<tfoot data-foot>${FOOT[k]()}</tfoot>`:''}</table></div>`;
+  if(f)h+=`<p class="hint">Clear the search to drag rows into a new order.</p>`;
+  return h+`<button class="addRow" data-act="add">${I.plus} ${ADD[k]}</button>`};
+ const floors=()=>`<datalist id="fk-floors">${[...new Set(d.cams.map(r=>String(r.floor).trim()).filter(Boolean))].map(f=>`<option value="${esc(f)}">`).join('')}</datalist>`;
+ const body={cams:()=>grid('cams'),mounts:()=>grid('mounts')+floors(),equip:()=>grid('equip'),cables:()=>grid('cables'),
+  general:()=>`<div class="sh"><h2>Main distribution frame</h2></div><div class="card form"><div><label for="g1">Primary MDF location</label><input id="g1" data-g="mdfLocation" value="${esc(d.mdfLocation)}" placeholder="e.g. Ground floor main office"></div></div>${grid('idfs')}`,
+  notes:()=>`<div class="sh"><h2>Site observations & technical notes</h2></div><p class="intro">Start each point on a new line. Every line becomes its own note in the Excel export.</p><label for="nt" class="sr">Notes</label><textarea id="nt" data-g="notes" style="min-height:300px">${esc(d.notes)}</textarea>`};
+ const draw=()=>{const b=issuesBy(p),k=kind();lastTab[p.id]=tab;
+  el.innerHTML=`<div class="tabs" role="tablist" aria-label="Survey sections">${TABS.map(([t,l])=>`<button role="tab" aria-selected="${t===tab}" class="${t===tab?'on':''}" data-tab="${t}">${l}<span class="tc" data-tc="${t}">${b[t]?.length||''}</span></button>`).join('')}</div><div id="cb">${body[tab]()}</div>${ADD[k]?`<button class="pri fab" data-act="add">${I.plus}<span>${ADD[k]}</span></button>`:''}`;const tb=el.querySelector('.tabs'),on=tb.querySelector('.on');if(on)tb.scrollLeft=on.offsetLeft-(tb.clientWidth-on.offsetWidth)/2};
+ const refresh=(tr)=>{const k=kind();
+  if(tr){const r=d[k][+tr.dataset.i];const a=tr.querySelector('[data-c=rt]');if(a)a.textContent=rt(r);const t=tr.querySelector('[data-c=tot]');if(t)t.innerHTML=totHtml(r);const h=tr.querySelector('[data-c=hint]');if(h)h.innerHTML=hint(r)}
+  const f=el.querySelector('[data-foot]');if(f&&FOOT[k])f.innerHTML=FOOT[k]();
+  const b=issuesBy(p);el.querySelectorAll('[data-tc]').forEach(e=>e.textContent=b[e.dataset.tc]?.length||'');
+  el.querySelectorAll('[data-iss]').forEach(e=>{const open=e.querySelector('details')?.open;e.innerHTML=issHtml(e.dataset.iss);if(open)e.querySelector('details')?.setAttribute('open','')})};
+ const redrawRow=(i,focus)=>{const tr=el.querySelector(`tr[data-i="${i}"]`);if(!tr)return draw();const t=document.createElement('tbody');t.innerHTML=rowHtml(kind(),i);const n=t.firstElementChild;tr.replaceWith(n);refresh(n);if(focus)n.querySelector(focus)?.focus()};
+ const firstField=tr=>tr?.querySelector('input:not([disabled]),select');
+
+ el.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.tab){tab=b.dataset.tab;draw();window.scrollTo({top:0});return}
+  const k=kind(),act=b.dataset.act;if(!act)return;
+  if(act==='add'){d[k].push(BLANK[k](d));ctx.save();q[k]='';draw();const l=el.querySelectorAll('tr[data-i]'),tr=l[l.length-1];
+   if(tr){tr.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});firstField(tr)?.focus({preventScroll:true})}say(ADD[k].replace('Add','Added'));return}
+  const tr=b.closest('tr[data-i]');if(!tr)return;const i=+tr.dataset.i,r=d[k][i];
+  if(act==='del'){d[k].splice(i,1);ctx.save();draw();toast('Row deleted',{label:'Undo',fn:()=>{d[k].splice(i,0,r);ctx.save();draw()}})}
+  if(act==='mode'){if(r.mode===b.dataset.v)return;r.mode=b.dataset.v;r.modeSet=true;if(r.mode==='avg'&&!num(r.runs))r.auto=true;ctx.save();
+   const sg=b.closest('.seg');sg.dataset.v=r.mode;sg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===r.mode));
+   COLS.cables.forEach((c,ci)=>{if(['len','runs','tot'].includes(c.k)){const td=tr.children[ci+1];td.dataset.label=c.lab?c.lab(r):c.l;td.innerHTML=c.cell(r,i)}});refresh(tr)}
+  if(act==='relink'){r.auto=true;ctx.save();redrawRow(i,'[data-k=runs]')}};
+ el.onchange=e=>{const t=e.target;if(t.tagName!=='SELECT')return;const tr=t.closest('tr[data-i]');if(!tr)return;const k=kind(),i=+tr.dataset.i,r=d[k][i],c=t.dataset.k;r[c]=t.value;
+  if(k==='cables'&&c==='name'&&!r.modeSet){r.mode=CAT.has(r.name)?'avg':'total';if(r.mode==='avg'&&!num(r.runs))r.auto=true}
+  if(k==='idfs'&&c==='kind'&&(/^(IDF|ENC)-\d+$/i.test(String(r.name).trim())||!String(r.name).trim()))r.name=nextName(d,r.kind,r);
+  ctx.save();if(c==='name'||c==='type'||c==='kind')redrawRow(i,r[c]==='other'?'[data-k=custom]':`[data-k=${c}]`);else refresh(tr)};
+ el.oninput=e=>{const t=e.target;if(t.tagName==='SELECT')return;
+  if(t.dataset.q!==undefined){q[kind()]=t.value;const pos=t.selectionStart;draw();const s=el.querySelector('[data-q]');s.focus();s.setSelectionRange(pos,pos);return}
+  if(t.dataset.g){d[t.dataset.g]=t.value;ctx.save();refresh();return}
+  const tr=t.closest('tr[data-i]');if(!tr)return;const k=kind(),r=d[k][+tr.dataset.i],c=t.dataset.k;if(!c)return;
+  r[c]=t.type==='number'?(t.value===''?0:Math.max(0,+t.value)):t.value;
+  if(k==='cables'&&c==='runs')r.auto=false;
+  refresh(tr);ctx.save()};
+
+ /* keyboard reorder on the handle */
+ el.onkeydown=e=>{const h=e.target.closest?.('[data-drag]');if(!h||(e.key!=='ArrowUp'&&e.key!=='ArrowDown'))return;e.preventDefault();
+  const k=kind(),a=d[k],i=+h.closest('tr').dataset.i,j=i+(e.key==='ArrowUp'?-1:1);if(j<0||j>=a.length)return;
+  [a[i],a[j]]=[a[j],a[i]];ctx.save();draw();el.querySelector(`tr[data-i="${j}"] [data-drag]`)?.focus();say(`Moved to position ${j+1} of ${a.length}`)};
+
+ /* pointer drag (mouse, touch and pen) */
+ let dr=null;const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+ const step=()=>{const{tr,tb,y}=dr,rows=[...tb.querySelectorAll('tr[data-i]')],sibs=rows.filter(x=>x!==tr);
+  let to=sibs.length;for(let j=0;j<sibs.length;j++){const b=sibs[j].getBoundingClientRect();if(y<b.top+b.height/2){to=j;break}}
+  if(to!==rows.indexOf(tr)){const before=new Map(sibs.map(s=>[s,s.getBoundingClientRect().top]));
+   to<sibs.length?tb.insertBefore(tr,sibs[to]):tb.appendChild(tr);
+   if(!calm)sibs.forEach(s=>{const dy=before.get(s)-s.getBoundingClientRect().top;if(Math.abs(dy)>1){s.style.transition='none';s.style.transform=`translateY(${dy}px)`;requestAnimationFrame(()=>{s.style.transition='transform .16s ease';s.style.transform=''})}})}
+  const nat=tr.getBoundingClientRect().top-dr.t;dr.t=dr.top0+(y-dr.y0)-nat;tr.style.transform=`translateY(${dr.t}px)`};
+ el.onpointerdown=e=>{const h=e.target.closest('[data-drag]');if(!h||h.disabled||e.button>0)return;e.preventDefault();
+  const tr=h.closest('tr');try{h.setPointerCapture(e.pointerId)}catch(_){}
+  dr={h,tr,tb:tr.parentNode,y0:e.clientY,y:e.clientY,top0:tr.getBoundingClientRect().top,t:0,raf:0};
+  tr.classList.add('dragging');document.body.classList.add('dragging-on');
+  const loop=()=>{if(!dr)return;const top=(document.querySelector('.tabs')?.getBoundingClientRect().bottom||100)+40,bot=innerHeight-60;
+   const s=dr.y<top?-Math.ceil((top-dr.y)/5):dr.y>bot?Math.ceil((dr.y-bot)/5):0;if(s){window.scrollBy(0,s);step()}dr.raf=requestAnimationFrame(loop)};dr.raf=requestAnimationFrame(loop)};
+ el.onpointermove=e=>{if(!dr)return;e.preventDefault();dr.y=e.clientY;step()};
+ const end=()=>{if(!dr)return;cancelAnimationFrame(dr.raf);const{tr,tb}=dr,k=kind();dr=null;document.body.classList.remove('dragging-on');
+  const order=[...tb.querySelectorAll('tr[data-i]')].map(x=>+x.dataset.i),moved=order.some((v,j)=>v!==j);
+  tr.style.transition=calm?'none':'transform .14s ease';tr.style.transform='';
+  setTimeout(()=>{if(moved){const nw=order.indexOf(+tr.dataset.i);d[k]=order.map(j=>d[k][j]);ctx.save();draw();el.querySelector(`tr[data-i="${nw}"] [data-drag]`)?.focus({preventScroll:true});say(`Moved to position ${nw+1}`)}else tr.classList.remove('dragging')},calm?0:140)};
+ el.onpointerup=end;el.onpointercancel=end;el.addEventListener('lostpointercapture',end);
  draw()}
-App.register({id:'cctv',name:'CCTV & ELV Site Survey',description:'Cameras by floor, rack equipment, cable routes and site notes.',category:'Surveys',icon:'📹',render,progress,summary,issues,sheets,
- demo:()=>({mdfLocation:'Ground Floor Main Office Area',compliance:'Compliant (ANPR & Storage Standards)',
- cams:[{mdf:'MDF',floor:'GF',dome:6,bullet:21,ptz:2,kpoi:2,anpr:2,pole:'2 wall-mounted poles'},{mdf:'MDF',floor:'MF',dome:1,bullet:0,ptz:0,kpoi:0,anpr:0,pole:'ANPR pole'}],
- equip:[['EVS / NVR Storage Server (32CH)','EVS4 Series / RAID 5 Storage Configured',2,'4U Total','Dual RJ45 Gigabit Ports'],['24-Port PoE+ Managed Network Switch','L2+ Industrial Switch / 370W Budget',2,'2U Total','RJ45 PoE / SFP+ Fiber Uplink'],['ANPR Processing Server','Dedicated License Plate Processing Unit',1,'2U','Dual RJ45 / HDMI Output'],['Cat6A Master Patch Panel','24-Port Keystone Patch Panel',2,'2U Total','RJ45 Pass-Through'],['Online UPS Backup Power Unit','3KVA Rack-Mount / Smart-UPS',1,'3U','Hardwired AC Terminal Block'],['Monitoring Workstation Station','PC Workstation + Dual 32" Display',1,'Desk Mount','HDMI / DisplayPort Output']].map(a=>({desc:a[0],spec:a[1],qty:a[2],rack:a[3],conn:a[4],status:'New Install'})),
- cables:[['CBL-CAM-GF','Ground Floor Cameras (33 Nos)','MDF','Outdoor Cat6 FTP / Heavy PVC Pipe',85,'Cable Tray & Perimeter Underground Conduit'],['CBL-CAM-MF','Mezzanine Floor Camera (1 No)','MDF','Indoor Cat6 UTP / PVC Trunking',30,'Concealed Ceiling Void Trunking'],['CBL-ANPR-01','External ANPR Pole','MDF Server','Cat6 FTP Direct Burial / GI Pipe',60,'Underground Trenching & Galvanized Pipe'],['CBL-UPLINK','MDF Switch 01','Control Workstation','OS2 Single-Mode Fiber (LC Patch)',45,'Overhead Internal Cable Ladder']].map(a=>({tag:a[0],from:a[1],to:a[2],type:a[3],len:a[4],path:a[5]})),
+
+App.register({id:'cctv',name:'CCTV & ELV Site Survey',description:'Cameras by floor, mounting, rack equipment, cabling, IDF / ENC locations and site notes.',category:'Surveys',icon:'📹',render,progress,summary,issues,report,
+ demo:()=>({v:2,mdfLocation:'Ground Floor Main Office Area',
+ cams:[{mdf:'MDF',floor:'GF',dome:6,bullet:21,ptz:2,kpoi:2,anpr:2},{mdf:'MDF',floor:'MF',dome:1,bullet:0,ptz:0,kpoi:0,anpr:0}],
+ mounts:[{type:'wall',custom:'',qty:26,loc:'GF',note:'Bullet and KPOI cameras on the building facade'},{type:'polewall',custom:'',qty:2,loc:'GF',note:'Wall-mounted pole brackets at yard corners for PTZ'},{type:'pole',custom:'',qty:2,loc:'GF',note:'ANPR poles at the gate with grounding and surge protection'},{type:'ceiling',custom:'',qty:4,loc:'GF, MF',note:'Indoor dome cameras'}],
+ equip:[['EVS / NVR Storage Server (32CH)','EVS4 Series / RAID 5 Storage Configured',2,'4U Total'],['24-Port PoE+ Managed Network Switch','L2+ Industrial Switch / 370W Budget',2,'2U Total'],['ANPR Processing Server','Dedicated License Plate Processing Unit',1,'2U'],['Cat6A Master Patch Panel','24-Port Keystone Patch Panel',2,'2U Total'],['Online UPS Backup Power Unit','3KVA Rack-Mount / Smart-UPS',1,'3U'],['Monitoring Workstation Station','PC Workstation + Dual 32" Display',1,'Desk Mount']].map(a=>({desc:a[0],spec:a[1],qty:a[2],rack:a[3],status:'New Install'})),
+ cables:[{name:'cat6',custom:'',mode:'avg',len:35,runs:0,auto:true,note:'Outdoor Cat6 FTP in heavy PVC pipe, cable tray and perimeter conduit'},{name:'fibre',custom:'',mode:'total',len:45,runs:0,auto:false,note:'OS2 single-mode uplink, MDF switch to control workstation, overhead ladder'},{name:'power',custom:'',mode:'total',len:120,runs:0,auto:false,note:'Supply to ANPR poles and PTZ cameras through GI pipe'}],
+ idfs:[{id:'loc_demo1',kind:'ENC',name:'ENC-01',loc:'Gate area, ANPR pole base',note:'IP66 enclosure with PoE switch and surge protection'}],
  notes:'• The equipment room and monitoring room may be located within the office area, subject to client confirmation of the final locations for the CCTV equipment rack, monitoring station, and control equipment.\n• All outdoor cameras (including ANPR and PTZ) require proper grounding, surge protection, and waterproof junction boxes.\n• ANPR coverage requires minimum 95% accuracy verification during daytime and nighttime testing prior to final sign-off.'})});
 })();
 </script>
@@ -205,39 +561,39 @@ async function dup(p){const c=newProject(Object.assign(JSON.parse(JSON.stringify
 function importFile(){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=async()=>{try{const p=validateProject(JSON.parse(await i.files[0].text()));App.projects.push(p);Store.save(p);toast('Imported "'+p.name+'"');location.hash='#/p/'+p.id}catch(e){toast('Import failed: '+e.message,{err:1})}};i.click()}
 function home(){crumbs([['Home']]);const ps=[...App.projects].sort((a,b)=>b.updated-a.updated),last=ps.find(p=>!p.demo)||ps[0];
  const list=ps.filter(p=>(!flt.q||(p.name+p.client+p.site).toLowerCase().includes(flt.q.toLowerCase()))&&(!flt.s||p.status===flt.s));
- view.innerHTML=`<h1>Workspace</h1><div class="row"><button class="pri" id="n">＋ New project</button>${last?`<a class="btn" href="#/p/${last.id}">▶ Continue: ${esc(last.name.slice(0,30))}</a>`:''}<button id="i">⬆ Import project</button></div>
+ view.innerHTML=`<h1>Workspace</h1><div class="row"><button class="pri" id="n">${I.plus} New project</button>${last?`<a class="btn" href="#/p/${last.id}">▶ Continue: ${esc(last.name.slice(0,30))}</a>`:''}<button id="i">⬆ Import project</button></div>
  <h2>Projects</h2>${ps.length?`<div class="row" style="margin-bottom:10px"><input id="q" type="search" placeholder="Search projects" aria-label="Search projects" value="${esc(flt.q)}" style="flex:2;min-width:180px"><select id="s" aria-label="Filter status" style="flex:1;min-width:140px"><option value="">All statuses</option>${STATUSES.map(s=>`<option${flt.s===s?' selected':''}>${s}</option>`).join('')}</select></div>`:''}
  <div class="grid" id="pl">${list.map(p=>`<div class="card"><div class="row"><b class="sp">${esc(p.name||'Untitled')}</b>${p.demo?'<span class="badge demo">Demo</span>':''}</div><div style="color:var(--mut);font-size:13px">${esc([p.client,p.site].filter(Boolean).join(' · '))||'—'}<br>Updated ${fmtDate(p.updated)}</div>
  <div class="row" style="margin:10px 0"><span class="badge">${p.status}</span><span class="sp"></span><small>${projPct(p)}%</small></div><div class="bar"><i style="width:${projPct(p)}%"></i></div>
- <div class="row" style="margin-top:12px"><a class="btn pri" href="#/p/${p.id}">Open</a><button data-x="${p.id}" aria-label="Export Excel for ${esc(p.name)}">Excel</button></div></div>`).join('')}</div>
- ${!ps.length?`<div class="card empty"><p>Create a project to begin.</p><button class="pri" id="n2">＋ New project</button> <button id="d">Load demo project</button></div>`:!list.length?'<div class="card empty">No projects match.</div>':''}
+ <div class="row" style="margin-top:12px"><a class="btn pri" href="#/p/${p.id}">Open</a><button data-x="${p.id}" aria-label="Export Excel for ${esc(p.name)}">${I.dl} Excel</button></div></div>`).join('')}</div>
+ ${!ps.length?`<div class="card empty"><p>Create a project to begin.</p><button class="pri" id="n2">${I.plus} New project</button> <button id="d">Load demo project</button></div>`:!list.length?'<div class="card empty">No projects match.</div>':''}
  <h2>Tools</h2><div class="grid">${App.mods.map(m=>`<div class="card"><div class="row"><span style="font-size:24px" aria-hidden="true">${m.icon}</span><b class="sp">${esc(m.name)}</b>${m.status==='soon'?'<span class="badge soon">Coming soon</span>':''}</div><p style="color:var(--mut);font-size:14px;margin:6px 0 10px">${esc(m.description)}</p>
  ${m.status==='ready'?`<button data-m="${m.id}" ${last?'':'disabled'}>${last?'Open in latest project':'Create a project first'}</button>`:''}</div>`).join('')}</div>`;
  $('#n').onclick=create;$('#i').onclick=importFile;$('#n2')&&($('#n2').onclick=create);$('#d')&&($('#d').onclick=async()=>{await addDemo();route()});
  $('#q')&&($('#q').oninput=e=>{flt.q=e.target.value;const pos=e.target.selectionStart;home();const n=$('#q');n.focus();n.setSelectionRange(pos,pos)});$('#s')&&($('#s').onchange=e=>{flt.s=e.target.value;home()});
- view.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>exportExcel(get(b.dataset.x)));view.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>location.hash=`#/p/${last.id}/${b.dataset.m}`)}
+ view.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>openExport(get(b.dataset.x)));view.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>location.hash=`#/p/${last.id}/${b.dataset.m}`)}
 function proj(p){crumbs([['Home','#/'],[p.name||'Project']]);const f=[['name','Project name *'],['client','Client'],['site','Site'],['location','Location'],['ref','Project reference'],['surveyor','Engineer / Surveyor']];
  const sum=projectSummary(p),iss=projectIssues(p);
  view.innerHTML=`<div class="row"><h1 class="sp">${esc(p.name||'Untitled')} ${p.demo?'<span class="badge demo">Demo</span>':''}</h1></div>
- <div class="row"><button class="pri" id="xl">⬇ Excel</button><button id="js">Export JSON</button><button id="pr">Print report</button><button id="dp">Duplicate</button><button id="dl" class="dng">Delete</button></div>
+ <div class="row"><button class="pri" id="xl">${I.dl} Export Excel</button><button id="js">Export JSON</button><button id="pr">Print report</button><button id="dp">Duplicate</button><button id="dl" class="dng">Delete</button></div>
  <h2>Modules</h2><div class="grid">${ready().map(m=>`<div class="card"><div class="row"><span aria-hidden="true">${m.icon}</span><b class="sp">${esc(m.name)}</b></div><div class="row" style="margin:8px 0"><small class="sp">${p.data[m.id]?'':'Not started · '}${m.progress?m.progress(p)+'%':''}</small></div><div class="bar"><i style="width:${m.progress?m.progress(p):0}%"></i></div><a class="btn pri" style="margin-top:10px" href="#/p/${p.id}/${m.id}">${p.data[m.id]?'Continue':'Start'}</a></div>`).join('')}</div>
- ${touched(p)?`<h2>Summary</h2><div class="stats">${sum.map(([l,v])=>`<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('')}</div>`:''}
+ ${touched(p)?`<h2>Summary</h2><div class="stats">${sum.map(([l,v])=>`<div class="stat"><b>${esc(typeof v==='number'?fm(v):v)}</b><span>${esc(l)}</span></div>`).join('')}</div>`:''}
  ${iss.length?`<h2>Outstanding items (${iss.length})</h2><div class="card"><ul class="issues">${iss.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`:''}
  <h2>Project details</h2><div class="card form">${f.map(([k,l])=>`<div><label for="f_${k}">${l}</label><input id="f_${k}" data-f="${k}" value="${esc(p[k])}"></div>`).join('')}
  <div><label for="f_date">Survey date</label><input id="f_date" type="date" data-f="date" value="${esc(p.date)}"></div><div><label for="f_status">Status</label><select id="f_status" data-f="status">${STATUSES.map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}</select></div>
  <div style="grid-column:1/-1"><label for="f_notes">Notes</label><textarea id="f_notes" data-f="notes" style="min-height:90px">${esc(p.notes)}</textarea></div></div>`;
  view.oninput=e=>{const k=e.target.dataset.f;if(!k)return;p[k]=e.target.value;if(k==='name')crumbs([['Home','#/'],[p.name||'Project']]);Store.save(p)};
- $('#xl').onclick=()=>exportExcel(p);$('#js').onclick=()=>exportJSON(p);$('#pr').onclick=()=>printReport(p);$('#dp').onclick=()=>dup(p);$('#dl').onclick=()=>remove(p)}
-function modView(p,m){crumbs([['Home','#/'],[p.name,'#/p/'+p.id],[m.name]]);view.oninput=null;view.innerHTML=`<div class="row"><a class="btn" href="#/p/${p.id}">← ${esc(p.name)}</a><span class="sp"></span><button id="xl">⬇ Excel</button><button id="pr">Print</button></div><div id="mv"></div>`;
- $('#xl').onclick=()=>exportExcel(p);$('#pr').onclick=()=>printReport(p);const el=$('#mv');el.oninput=el.onclick=null;
+ $('#xl').onclick=()=>openExport(p);$('#js').onclick=()=>exportJSON(p);$('#pr').onclick=()=>printReport(p);$('#dp').onclick=()=>dup(p);$('#dl').onclick=()=>remove(p)}
+function modView(p,m){crumbs([['Home','#/'],[p.name,'#/p/'+p.id],[m.name]]);view.oninput=null;view.innerHTML=`<div class="row"><a class="btn" href="#/p/${p.id}">← ${esc(p.name)}</a><span class="sp"></span><button id="xl">${I.dl} Excel</button><button id="pr">Print</button></div><div id="mv"></div>`;
+ $('#xl').onclick=()=>openExport(p);$('#pr').onclick=()=>printReport(p);const el=$('#mv');
  try{m.render(el,p,ctxFor(p))}catch(e){console.error(e);el.innerHTML='<div class="card">This module failed to load. Your data is safe – go back and try again.</div>';toast('Module error: '+e.message,{err:1})}}
 function route(){view.oninput=null;const[,t,id,mid]=location.hash.split('/');try{
  if(t==='p'){const p=get(id);if(!p){toast('Project not found',{err:1});location.hash='#/';return home()}
   if(mid){const m=App.mod(mid);if(m&&m.status==='ready')return modView(p,m)}return proj(p)}home()}catch(e){console.error(e);view.innerHTML='<div class="card">Something went wrong. <a href="#/">Back to home</a></div>'}
  window.scrollTo(0,0)}
+function validateProjectKeep(p){if(!p||typeof p.name!=='string'||!p.data)throw 0;return Object.assign(newProject(),p)}
 (async()=>{await Store.open();App.projects=(await Store.load()).map(p=>{try{return validateProjectKeep(p)}catch(e){return null}}).filter(Boolean);
  if(!App.projects.length&&Store.db&&!localStorage.getItem('fk_seeded')){await addDemo();localStorage.setItem('fk_seeded','1')}
  window.addEventListener('hashchange',route);route()})();
-function validateProjectKeep(p){if(!p||typeof p.name!=='string'||!p.data)throw 0;return Object.assign(newProject(),p)}
 </script>
 </body></html>
