@@ -120,7 +120,7 @@ dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media print{body>*:not(#report){display:none!important}#report{display:block;color:#000;font:11px/1.4 Calibri,Arial,sans-serif}
- #report table{display:table;width:100%;border-collapse:collapse;margin-bottom:10px}#report tr{display:table-row}#report td,#report th{display:table-cell;border:1px solid #bfbfbf;padding:3px 6px;text-align:left}
+ #report table{display:table;width:100%;border-collapse:collapse;margin-bottom:28px}#report tr{display:table-row}#report td,#report th{display:table-cell;border:1px solid #bfbfbf;padding:3px 6px;text-align:left}
  #report th{background:#2f5597!important;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
  #report .ttl{background:#17365d;color:#fff;padding:10px 12px;font-size:18px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0}
  #report h2{background:#1f4e78;color:#fff;padding:5px 8px;font-size:12px;text-transform:uppercase;page-break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:14px 0 6px}
@@ -182,14 +182,17 @@ function validateProject(o){if(!o||typeof o!=='object'||typeof o.name!=='string'
 </script>
 <script>
 /* Export: styled Excel (single sheet or sheet per section), JSON backup, printable report.
+   Rule: every figure appears in ONE place only. Each schedule carries its own TOTAL row, so there is
+   no separate summary block and no by-type sub-table repeating the same numbers.
    Modules supply report(p) -> [section]. A section can have: title, name (sheet name), kv [[k,v]], paras [text],
-   cols [{k,h,w,num,sum,calc,fmt,f(row,L,P),style(v)}], rows [{k:v}], total (label), sub {title,cols,rows,total,at}. */
+   cols [{k,h,w,num,sum,calc,fmt,f(row,L),style(v)}], rows [{k:v}], total (label). */
+const XGAP=2; /* blank rows left between blocks (tables, info lists, notes) in the Excel sheet */
 const ready=()=>App.mods.filter(m=>m.status==='ready');
 function projectSummary(p){return ready().filter(m=>m.summary).flatMap(m=>m.summary(p))}
 function projectIssues(p){const o=[];if(!p.name.trim())o.push('Project name is missing');ready().filter(m=>m.issues).forEach(m=>m.issues(p).forEach(i=>o.push(m.name+': '+i)));return o}
 function reportModel(p){const info=[['Project',p.name],['Client',p.client],['Site',p.site],['Location',p.location],['Survey date',p.date],['Engineer / surveyor',p.surveyor],['Reference',p.ref],['Status',p.status]];
  if(String(p.notes||'').trim())info.push(['Project notes',p.notes]);
- return{p,info,summary:projectSummary(p),issues:projectIssues(p),sections:ready().filter(m=>m.report).flatMap(m=>m.report(p))}}
+ return{p,info,issues:projectIssues(p),sections:ready().filter(m=>m.report).flatMap(m=>m.report(p))}}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 const fname=p=>(p.name||'project').replace(/[^\w\-]+/g,'_').slice(0,50);
 
@@ -229,58 +232,53 @@ function XSheet(ws,widths){const W=widths.length;let row=1;ws.columns=widths.map
  const merge=(r,a,b)=>{if(b>a)ws.mergeCells(r,a,r,b)};
  const each=(r,a,b,f)=>{for(let c=a;c<=b;c++)f(ws.getCell(r,c))};
  const bar=(t,fill,font,h)=>{merge(row,1,W);const c=ws.getCell(row,1);c.value=t;c.font=font;c.fill=xfill(fill);c.alignment={vertical:'middle',indent:1};ws.getRow(row).height=h;row++};
- return{get row(){return row},gap(n=1){row+=n},
+ return{get row(){return row},gap(n=XGAP){row+=n},
   title(t,sub){bar(t,XC.title,xfont({size:16,bold:true,color:{argb:XC.white}}),34);
-   if(sub){merge(row,1,W);const s=ws.getCell(row,1);s.value=sub;s.font=xfont({italic:true,color:{argb:XC.sub}});s.alignment={vertical:'middle',indent:1};ws.getRow(row).height=18;row++}row++},
+   if(sub){merge(row,1,W);const s=ws.getCell(row,1);s.value=sub;s.font=xfont({italic:true,color:{argb:XC.sub}});s.alignment={vertical:'middle',indent:1};ws.getRow(row).height=18;row++}row+=XGAP},
   band(t,fill){bar(String(t).toUpperCase(),fill||XC.band,xfont({size:11,bold:true,color:{argb:XC.white}}),22)},
-  subhead(t){merge(row,1,W);const c=ws.getCell(row,1);c.value=t;c.font=xfont({bold:true,color:{argb:XC.band}});c.alignment={vertical:'bottom',indent:1};
-   each(row,1,W,x=>x.border={bottom:xside(XC.band,'medium')});ws.getRow(row).height=20;row++},
   kv(pairs){let kc=1;while(kc<W-1&&span(1,kc)<22)kc++;
    pairs.forEach(([k,v])=>{merge(row,1,kc);merge(row,kc+1,W);const a=ws.getCell(row,1),b=ws.getCell(row,kc+1);
     a.value=k;b.value=(v===''||v==null)?'—':v;each(row,1,W,x=>x.border=xbox(XC.line));
     a.font=xfont({bold:true,color:{argb:'FF404040'}});a.fill=xfill(XC.key);a.alignment={vertical:'top',indent:1,wrapText:true};
     b.font=xfont({bold:typeof v==='number'});b.alignment={vertical:'top',horizontal:'left',indent:1,wrapText:true};if(typeof v==='number')b.numFmt='#,##0.##';
-    ws.getRow(row).height=Math.max(18,xlines(b.value,span(kc+1,W)*1.1)*13+5);row++});row++},
+    ws.getRow(row).height=Math.max(18,xlines(b.value,span(kc+1,W)*1.1)*13+5);row++});row+=XGAP},
   paras(list,kind){const[f,ink,edge]=kind==='issue'?[XC.issFill,XC.issInk,XC.issEdge]:[XC.noteFill,XC.noteInk,XC.noteEdge];
    list.forEach(t=>{merge(row,1,W);const c=ws.getCell(row,1);c.value=t;c.font=xfont({size:10,color:{argb:ink}});c.fill=xfill(f);
     c.alignment={vertical:'middle',wrapText:true,indent:1};c.border={left:xside(edge,'thick'),bottom:xside(XC.white)};
-    ws.getRow(row).height=Math.max(20,xlines(t,span(1,W)*1.05)*13+8);row++});row++},
-  table(sec,c0=1,P){const cols=sec.cols,n=cols.length,idx={};cols.forEach((c,i)=>idx[c.k]=c0+i);const L=k=>colL(idx[k]);const h=row;
-   cols.forEach((c,i)=>{const x=ws.getCell(h,c0+i);x.value=c.h;x.font=xfont({bold:true,color:{argb:XC.white}});x.fill=xfill(XC.head);
+    ws.getRow(row).height=Math.max(20,xlines(t,span(1,W)*1.05)*13+8);row++});row+=XGAP},
+  table(sec){const cols=sec.cols,n=cols.length,idx={};cols.forEach((c,i)=>idx[c.k]=1+i);const L=k=>colL(idx[k]);const h=row;
+   cols.forEach((c,i)=>{const x=ws.getCell(h,1+i);x.value=c.h;x.font=xfont({bold:true,color:{argb:XC.white}});x.fill=xfill(XC.head);
     x.alignment={vertical:'middle',horizontal:c.num?'center':'left',wrapText:true,indent:c.num?0:1};x.border=xbox(XC.headLine)});
    ws.getRow(h).height=24;row++;const first=row;
-   if(!sec.rows.length){merge(row,c0,c0+n-1);const x=ws.getCell(row,c0);x.value='No entries recorded';x.font=xfont({italic:true,color:{argb:XC.sub}});x.alignment={horizontal:'center'};each(row,c0,c0+n-1,y=>y.border=xbox(XC.line));row+=2;return{h,first,last:first-1,L,n}}
-   sec.rows.forEach((o,j)=>{let hl=1;cols.forEach((c,i)=>{const x=ws.getCell(row,c0+i);let v=o[c.k];if(v==null)v='';
-     x.value=(c.f&&typeof v==='number')?{formula:c.f(row,L,P),result:v}:v;
+   if(!sec.rows.length){merge(row,1,n);const x=ws.getCell(row,1);x.value='No entries recorded';x.font=xfont({italic:true,color:{argb:XC.sub}});x.alignment={horizontal:'center'};each(row,1,n,y=>y.border=xbox(XC.line));row+=1+XGAP;return{h,first,last:first-1,L,n}}
+   sec.rows.forEach((o,j)=>{let hl=1;cols.forEach((c,i)=>{const x=ws.getCell(row,1+i);let v=o[c.k];if(v==null)v='';
+     x.value=(c.f&&typeof v==='number')?{formula:c.f(row,L),result:v}:v;
      x.font=xfont({bold:!!c.calc});x.border=xbox(XC.line);x.alignment={vertical:'middle',horizontal:c.num?'center':'left',wrapText:!c.num,indent:c.num?0:1};
      if(c.calc)x.fill=xfill(XC.calc);else if(j%2)x.fill=xfill(XC.zebra);
      if(typeof v==='number')x.numFmt=c.fmt||'#,##0';
      if(c.num&&v==='—')x.font=xfont({color:{argb:XC.sub}});
      const s=c.style&&c.style(v);if(s){x.fill=xfill(s[0]);x.font=xfont({bold:true,color:{argb:s[1]}});x.alignment={vertical:'middle',horizontal:'center'}}
-     if(!c.num&&typeof v==='string')hl=Math.max(hl,xlines(v,(widths[c0+i-1]||c.w)*1.05))});
+     if(!c.num&&typeof v==='string')hl=Math.max(hl,xlines(v,(widths[i]||c.w)*1.05))});
     ws.getRow(row).height=Math.max(18,hl*13+5);row++});
    const last=row-1;
-   if(sec.total){const fs=cols.findIndex(c=>c.sum);if(fs>1)merge(row,c0,c0+fs-1);
-    cols.forEach((c,i)=>{const x=ws.getCell(row,c0+i);
+   if(sec.total){const fs=cols.findIndex(c=>c.sum);if(fs>1)merge(row,1,fs);
+    cols.forEach((c,i)=>{const x=ws.getCell(row,1+i);
      if(i===0)x.value=sec.total;
      else if(c.sum){const res=sec.rows.reduce((a,o)=>a+(typeof o[c.k]==='number'?o[c.k]:0),0);x.value={formula:`SUBTOTAL(109,${L(c.k)}${first}:${L(c.k)}${last})`,result:res};x.numFmt=c.fmt||'#,##0'}
      x.font=xfont({bold:true,color:{argb:XC.band}});x.fill=xfill(XC.total);x.alignment={vertical:'middle',horizontal:c.sum?'center':'left',indent:c.sum?0:1};
      x.border={top:xside(XC.band,'medium'),bottom:xside(XC.band,'medium'),left:xside(XC.line),right:xside(XC.line)}});
     ws.getRow(row).height=20;row++}
-   row++;return{h,first,last,L,n}},
+   row+=XGAP;return{h,first,last,L,n}},
   signoff(by){const m=Math.floor(W/2);merge(row,1,m);merge(row,m+1,W);
    [[1,'Prepared by'],[m+1,'Reviewed by']].forEach(([c,t])=>{const x=ws.getCell(row,c);x.value=t;x.font=xfont({bold:true,color:{argb:XC.white}});x.fill=xfill(XC.head);x.alignment={indent:1,vertical:'middle'}});
    ws.getRow(row).height=20;row++;
    [['Name',by||'',''],['Signature','',''],['Date','','']].forEach(([l,a,b])=>{merge(row,1,m);merge(row,m+1,W);
     ws.getCell(row,1).value=`${l}:  ${a}`;ws.getCell(row,m+1).value=`${l}:  ${b}`;each(row,1,W,x=>{x.border=xbox(XC.line);x.font=xfont({color:{argb:'FF404040'}});x.alignment={vertical:'middle',indent:1}});
     ws.getRow(row).height=l==='Signature'?34:22;row++});row++}}}
-function secWidths(sec,min=5){const w=[];const put=(cols,at=1)=>cols.forEach((c,i)=>w[at-1+i]=Math.max(w[at-1+i]||0,c.w||12));
- if(sec.cols)put(sec.cols);if(sec.sub)put(sec.sub.cols,sec.sub.at||2);
- if(!sec.cols)return[30,20,20,20,20];
- while(w.length<min)w.push(14);return w.map(x=>x||12)}
+function secWidths(sec,min=5){if(!sec.cols)return[30,20,20,20,20];const w=sec.cols.map(c=>c.w||12);while(w.length<min)w.push(14);return w}
 function writeSec(S,sec){S.band(sec.title);if(sec.kv)S.kv(sec.kv);
  if(sec.paras)S.paras(sec.paras.length?sec.paras:['No notes recorded']);
- let info=null;if(sec.cols){info=S.table(sec);if(sec.sub&&sec.rows.length){S.subhead(sec.sub.title);S.table(sec.sub,sec.sub.at||2,info)}}return info}
+ return sec.cols?S.table(sec):null}
 async function buildXL(m,lay){const wb=new ExcelJS.Workbook();wb.creator='FieldKit';wb.created=new Date();wb.calcProperties.fullCalcOnLoad=true;
  const P=m.p,amp=s=>String(s||'').replace(/&/g,'&&'),T='CCTV SITE SURVEY   |   '+(P.name||'Untitled').toUpperCase();
  const sub=[P.client,P.site,P.date&&('Survey date '+P.date)].filter(Boolean).join('   |   ')+(P.client||P.site||P.date?'   |   ':'')+'Exported '+new Date().toLocaleDateString(undefined,{dateStyle:'medium'});
@@ -289,11 +287,11 @@ async function buildXL(m,lay){const wb=new ExcelJS.Workbook();wb.creator='FieldK
  const add=(name,tab)=>wb.addWorksheet(name.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31),{properties:{tabColor:{argb:tab||XC.band}},views:[{showGridLines:false}]});
  if(lay==='one'){const w=[];m.sections.forEach(s=>{if(s.cols)secWidths(s).forEach((x,i)=>w[i]=Math.max(w[i]||0,Math.min(x,30)))});while(w.length<6)w.push(16);
   const ws=add('Survey Report',XC.title),S=XSheet(ws,w);setup(ws,'Survey report');
-  S.title(T,sub);S.band('Project information');S.kv(m.info);S.band('Summary');S.kv(m.summary);
+  S.title(T,sub);S.band('Project information');S.kv(m.info);
   if(m.issues.length){S.band('Outstanding items',XC.issEdge);S.paras(m.issues,'issue')}
   m.sections.forEach(s=>writeSec(S,s));S.band('Review and sign-off');S.signoff(P.surveyor)}
  else{const ov=add('Overview',XC.title),S=XSheet(ov,[28,18,18,18,18,18]);setup(ov,'Overview');
-  S.title(T,sub);S.band('Project information');S.kv(m.info);S.band('Summary');S.kv(m.summary);
+  S.title(T,sub);S.band('Project information');S.kv(m.info);
   if(m.issues.length){S.band('Outstanding items',XC.issEdge);S.paras(m.issues,'issue')}
   S.band('Sheets in this workbook');S.kv(m.sections.map(s=>[s.name,s.title]));S.band('Review and sign-off');S.signoff(P.surveyor);
   m.sections.forEach(sec=>{const ws=add(sec.name,sec.tab),S2=XSheet(ws,secWidths(sec));setup(ws,sec.title);S2.title(T,sub);
@@ -303,13 +301,13 @@ async function buildXL(m,lay){const wb=new ExcelJS.Workbook();wb.creator='FieldK
  download(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fname(P)+(lay==='one'?'_report':'_workbook')+'.xlsx')}
 
 /* ---- Fallbacks without styling ---- */
-function aoaSheets(m,lay){const secRows=s=>{const o=[[s.title.toUpperCase()]];(s.kv||[]).forEach(x=>o.push(x));
+function aoaSheets(m,lay){const gap=()=>Array.from({length:XGAP},()=>[]);
+ const secRows=s=>{const o=[[s.title.toUpperCase()]];(s.kv||[]).forEach(x=>o.push(x));
   if(s.paras)(s.paras.length?s.paras:['No notes recorded']).forEach(t=>o.push([t]));
-  if(s.cols){o.push(s.cols.map(c=>c.h));s.rows.forEach(r=>o.push(s.cols.map(c=>r[c.k]??'')));
-   if(s.total)o.push(s.cols.map((c,i)=>i===0?s.total:c.sum?s.rows.reduce((a,r)=>a+(+r[c.k]||0),0):''));
-   if(s.sub&&s.rows.length){o.push([],[s.sub.title]);o.push(s.sub.cols.map(c=>c.h));s.sub.rows.forEach(r=>o.push(s.sub.cols.map(c=>r[c.k]??'')))}}
-  o.push([]);return o};
- const head=[['CCTV SITE SURVEY | '+m.p.name],[],['PROJECT INFORMATION'],...m.info,[],['SUMMARY'],...m.summary,[],...(m.issues.length?[['OUTSTANDING ITEMS'],...m.issues.map(i=>[i]),[]]:[])];
+  if(s.cols){if(s.kv)o.push(...gap());o.push(s.cols.map(c=>c.h));s.rows.forEach(r=>o.push(s.cols.map(c=>r[c.k]??'')));
+   if(s.total)o.push(s.cols.map((c,i)=>i===0?s.total:c.sum?s.rows.reduce((a,r)=>a+(+r[c.k]||0),0):''))}
+  o.push(...gap());return o};
+ const head=[['CCTV SITE SURVEY | '+m.p.name],...gap(),['PROJECT INFORMATION'],...m.info,...gap(),...(m.issues.length?[['OUTSTANDING ITEMS'],...m.issues.map(i=>[i]),...gap()]:[])];
  return lay==='one'?[{name:'Survey Report',rows:[...head,...m.sections.flatMap(secRows)]}]:[{name:'Overview',rows:head},...m.sections.map(s=>({name:s.name,rows:secRows(s)}))]}
 function plainXLSX(m,lay){const wb=XLSX.utils.book_new();aoaSheets(m,lay).forEach(s=>{const ws=XLSX.utils.aoa_to_sheet(s.rows);const n=Math.max(...s.rows.map(r=>r.length));
   ws['!cols']=Array.from({length:n},(_,c)=>({wch:Math.min(50,Math.max(10,...s.rows.filter(r=>r.length>1).map(r=>String(r[c]??'').length)))}));XLSX.utils.book_append_sheet(wb,ws,s.name.slice(0,31))});
@@ -322,9 +320,9 @@ function printReport(p){const m=reportModel(p);
  const kv=a=>`<table>${a.map(([k,v])=>`<tr><td class="k">${esc(k)}</td><td>${esc(v===''||v==null?'—':(typeof v==='number'?fm(v):v)).replace(/\n/g,'<br>')}</td></tr>`).join('')}</table>`;
  const tb=s=>`<table><thead><tr>${s.cols.map(c=>`<th>${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${s.rows.length?s.rows.map(r=>`<tr>${s.cols.map(c=>`<td>${esc(typeof r[c.k]==='number'?fm(r[c.k]):r[c.k])}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${s.cols.length}">No entries recorded</td></tr>`}
   ${s.total&&s.rows.length?`<tr class="tot">${s.cols.map((c,i)=>`<td>${i===0?s.total:c.sum?fm(s.rows.reduce((a,r)=>a+(+r[c.k]||0),0)):''}</td>`).join('')}</tr>`:''}</tbody></table>`;
- $('#report').innerHTML=`<p class="ttl">CCTV Site Survey | ${esc(p.name)}</p><h2>Project information</h2>${kv(m.info)}<h2>Summary</h2>${kv(m.summary)}
+ $('#report').innerHTML=`<p class="ttl">CCTV Site Survey | ${esc(p.name)}</p><h2>Project information</h2>${kv(m.info)}
   ${m.issues.length?`<h2>Outstanding items</h2>${m.issues.map(i=>`<div class="note">${esc(i)}</div>`).join('')}`:''}
-  ${m.sections.map(s=>`<h2>${esc(s.title)}</h2>${s.kv?kv(s.kv):''}${s.paras?(s.paras.length?s.paras:['No notes recorded']).map(t=>`<div class="note">${esc(t)}</div>`).join(''):''}${s.cols?tb(s)+(s.sub&&s.rows.length?`<b>${esc(s.sub.title)}</b>${tb(s.sub)}`:''):''}`).join('')}
+  ${m.sections.map(s=>`<h2>${esc(s.title)}</h2>${s.kv?kv(s.kv):''}${s.paras?(s.paras.length?s.paras:['No notes recorded']).map(t=>`<div class="note">${esc(t)}</div>`).join(''):''}${s.cols?tb(s):''}`).join('')}
   <h2>Review and sign-off</h2><table><tr><td>Prepared by: ${esc(p.surveyor)}<br><br>Signature / Date:</td><td>Reviewed by:<br><br>Signature / Date:</td></tr></table>`;
  window.print()}
 </script>
@@ -387,20 +385,18 @@ function issuesBy(p){const d=D(p),o={cams:[],mounts:[],equip:[],cables:[],genera
 const issues=p=>Object.values(issuesBy(p)).flat();
 function progress(p){const d=D(p),b=issuesBy(p);const c=[d.cams.length&&!b.cams.length,d.mounts.length&&!b.mounts.length,d.equip.length&&!b.equip.length,d.cables.length&&!b.cables.length,!b.general.length,d.notes.trim()];
  return Math.round(100*c.filter(Boolean).length/c.length)}
+/* On-screen summary only (project page). Not written to Excel, where each table's TOTAL row already shows these figures. */
 function summary(p){const d=D(p),s=k=>d.cams.reduce((a,r)=>a+num(r[k]),0);
  return[['Total cameras',camTotal(d)],...T.map(k=>[TL[k]+' cameras',s(k)]),['Floors / levels',new Set(d.cams.map(r=>String(r.floor).trim()).filter(Boolean)).size],
   ['Mounting points',d.mounts.reduce((a,r)=>a+num(r.qty),0)],['IDF / ENC locations',d.idfs.length],['Equipment line items',d.equip.length],['Total equipment qty',d.equip.reduce((a,r)=>a+num(r.qty),0)],
   ['Cable lines',d.cables.length],['Total cable length (m)',Math.round(d.cables.reduce((a,r)=>a+ctot(d,r),0)*100)/100],['Outstanding items',issues(p).length]]}
 
-/* Excel / print report sections */
+/* Excel / print report sections: one table per section, no repeated sub-tables */
 function report(p){const d=D(p);
- const sumBy=(rows,key,val)=>{const m=new Map();rows.forEach(r=>{const k=key(r);m.set(k,(m.get(k)||0)+val(r))});return[...m]};
- const sif=(kk,vk)=>(r,L,P)=>`SUMIF($${P.L(kk)}$${P.first}:$${P.L(kk)}$${P.last},${L(kk)}${r},$${P.L(vk)}$${P.first}:$${P.L(vk)}$${P.last})`;
  const lenFmt=v=>v.every(Number.isInteger)?'#,##0':'#,##0.0#';
  const STY={'New Install':['FFE2EFDA','FF375623'],'Existing':['FFEDEDED','FF404040'],'Relocate':['FFDDEBF7','FF1F4E78'],'By Others':['FFEDE7F6','FF5B2C83'],'To Be Confirmed':['FFFFF2CC','FF7F6000']};
  const cr=d.cables.map((r,i)=>({no:i+1,cable:cname(r),mode:r.mode==='avg'?'Average':'Total',len:num(r.len),runs:r.mode==='avg'?runsOf(d,r):'—',tot:ctot(d,r),note:r.note}));
  const lf=lenFmt([...cr.map(r=>r.len),...cr.map(r=>r.tot)]);
- const mr=d.mounts.map((r,i)=>({no:i+1,type:mname(r),qty:num(r.qty),loc:r.loc,note:r.note}));
  return[
  {id:'general',name:'General',title:'MDF, IDF and ENC locations',tab:'FF2E75B6',kv:[['Primary MDF location',d.mdfLocation]],
   cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'kind',h:'Type',w:10},{k:'name',h:'Name / tag',w:18},{k:'loc',h:'Location',w:30},{k:'note',h:'Note',w:46}],
@@ -409,15 +405,14 @@ function report(p){const d=D(p);
   cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'mdf',h:'MDF / IDF',w:16},{k:'floor',h:'Floor',w:14},...T.map(k=>({k,h:TL[k],w:9,num:1,sum:1})),{k:'rt',h:'Total',w:10,num:1,sum:1,calc:1,f:(r,L)=>`SUM(${L('dome')}${r}:${L('anpr')}${r})`}],
   rows:d.cams.map((r,i)=>Object.assign({no:i+1,mdf:locName(d,r.mdf),floor:r.floor,rt:rt(r)},...T.map(k=>({[k]:num(r[k])}))))},
  {id:'mounts',name:'Mounting',title:'Camera mounting schedule',tab:'FF548235',total:'TOTAL',
-  cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'type',h:'Mounting type',w:22},{k:'qty',h:'Qty',w:10,num:1,sum:1},{k:'loc',h:'Location / floor',w:20},{k:'note',h:'Note',w:46}],rows:mr,
-  sub:{title:'Mounting points by type',at:2,total:'TOTAL',cols:[{k:'type',h:'Mounting type',w:22},{k:'qty',h:'Qty',w:10,num:1,sum:1,f:sif('type','qty')}],rows:sumBy(mr,r=>r.type,r=>r.qty).map(([type,qty])=>({type,qty}))}},
+  cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'type',h:'Mounting type',w:22},{k:'qty',h:'Qty',w:10,num:1,sum:1},{k:'loc',h:'Location / floor',w:20},{k:'note',h:'Note',w:46}],
+  rows:d.mounts.map((r,i)=>({no:i+1,type:mname(r),qty:num(r.qty),loc:r.loc,note:r.note}))},
  {id:'equip',name:'Equipment',title:'Equipment schedule: rack and control room',tab:'FF7030A0',total:'TOTAL',
   cols:[{k:'no',h:'Item',w:7,num:1},{k:'desc',h:'Description',w:36},{k:'spec',h:'Specification / model',w:36},{k:'qty',h:'Qty',w:8,num:1,sum:1},{k:'rack',h:'Rack (U)',w:12},{k:'status',h:'Status',w:18,style:v=>STY[v]}],
   rows:d.equip.map((r,i)=>({no:i+1,desc:r.desc,spec:r.spec,qty:num(r.qty),rack:r.rack,status:r.status}))},
  {id:'cables',name:'Cables',title:'Cable schedule',tab:'FFC55A11',total:'TOTAL',
   cols:[{k:'no',h:'S. No.',w:7,num:1},{k:'cable',h:'Cable',w:20},{k:'mode',h:'Length type',w:13},{k:'len',h:'Length (m)',w:12,num:1,fmt:lf},{k:'runs',h:'Runs',w:9,num:1},
-   {k:'tot',h:'Total length (m)',w:15,num:1,sum:1,calc:1,fmt:lf,f:(r,L)=>`IF(${L('mode')}${r}="Average",${L('len')}${r}*${L('runs')}${r},${L('len')}${r})`},{k:'note',h:'Note',w:46}],rows:cr,
-  sub:{title:'Total length by cable type',at:2,total:'TOTAL',cols:[{k:'cable',h:'Cable type',w:20},{k:'tot',h:'Total length (m)',w:15,num:1,sum:1,fmt:lf,f:sif('cable','tot')}],rows:sumBy(cr,r=>r.cable,r=>r.tot).map(([cable,tot])=>({cable,tot:Math.round(tot*100)/100}))}},
+   {k:'tot',h:'Total length (m)',w:15,num:1,sum:1,calc:1,fmt:lf,f:(r,L)=>`IF(${L('mode')}${r}="Average",${L('len')}${r}*${L('runs')}${r},${L('len')}${r})`},{k:'note',h:'Note',w:46}],rows:cr},
  {id:'notes',name:'Notes',title:'Site observations and technical notes',tab:'FFBF9000',paras:d.notes.split('\n').map(x=>x.replace(/^[•\-\*\s]+/,'').trim()).filter(Boolean)}]}
 
 /* ---------- UI ---------- */
